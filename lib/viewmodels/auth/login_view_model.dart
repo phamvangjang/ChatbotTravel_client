@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:mobilev2/utils/shared_prefs.dart';
 
 class LoginViewModel extends ChangeNotifier{
   String _email = '';
@@ -24,6 +25,7 @@ class LoginViewModel extends ChangeNotifier{
 
     // Replace with real logic or API call
     if (_email == 'admin@gmail.com' && _password == '123456') {
+      await SharedPrefs.setLoggedIn(true);
       return true;
     } else {
       return false;

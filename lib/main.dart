@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/auth/login_view_model.dart';
-import 'package:mobilev2/views/auth/auth_wrapper.dart';
+import 'package:mobilev2/views/splash/splash_view.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('isLoggedIn', false); // or prefs.remove('isLoggedIn');
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => LoginViewModel()),
-      ],
+    ChangeNotifierProvider(
+      create: (_) => LoginViewModel(),
       child: const MyApp(),
     ),
   );
@@ -27,7 +28,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue),
       ),
-      home: const AuthWrapper(),
+      home: SplashView(),
     );
   }
 }
