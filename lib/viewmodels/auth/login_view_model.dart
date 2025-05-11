@@ -1,10 +1,13 @@
-
 import 'package:flutter/material.dart';
 import 'package:mobilev2/utils/shared_prefs.dart';
 
-class LoginViewModel extends ChangeNotifier{
+class LoginViewModel extends ChangeNotifier {
   String _email = '';
   String _password = '';
+  bool _isLoading = false;
+
+  // Getter (Tương tự CanExecute trong RelayCommand)
+  bool get canLogin => _email.isNotEmpty && _password.isNotEmpty && !_isLoading;
 
   String get email => _email;
   String get password => _password;
@@ -19,16 +22,16 @@ class LoginViewModel extends ChangeNotifier{
     notifyListeners();
   }
 
-  Future<bool> login() async {
-    // Simulate login delay
-    await Future.delayed(const Duration(seconds: 2));
+  Future<void> login() async {
+    if (!canLogin) return; // Validate RelayCommand
 
-    // Replace with real logic or API call
-    if (_email == 'admin@gmail.com' && _password == '123456') {
-      await SharedPrefs.setLoggedIn(true);
-      return true;
-    } else {
-      return false;
-    }
+    _isLoading = true;
+    notifyListeners();
+
+    await Future.delayed(const Duration(seconds: 2)); // Giả lập API call
+    print('Login with $_email and $_password');
+
+    _isLoading = false;
+    notifyListeners();
   }
 }
