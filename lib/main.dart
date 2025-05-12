@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobilev2/viewmodels/auth/login_view_model.dart';
+import 'package:mobilev2/viewmodels/auth/login_viewmodel.dart';
 import 'package:mobilev2/views/splash/splash_view.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
