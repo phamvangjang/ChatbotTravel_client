@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth/login_viewmodel.dart';
@@ -97,6 +96,7 @@ class _LoginViewState extends State<LoginView> {
                             if (success && context.mounted) {
                               // Navigate to home on success
                               Navigator.pushReplacementNamed(context, '/home');
+                              // print("📁 Value of success: "+ success.toString());
                             }
                           }
                               : null,

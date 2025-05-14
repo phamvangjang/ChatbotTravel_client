@@ -1,7 +1,4 @@
-
-
 import 'package:flutter/material.dart';
-
 import '../../utils/shared_prefs.dart';
 import '../home/main_page.dart';
 import 'login_view.dart';

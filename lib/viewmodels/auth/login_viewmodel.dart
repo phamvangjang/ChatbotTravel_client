@@ -9,6 +9,9 @@ class LoginViewModel extends ChangeNotifier {
   bool _obscurePassword = true;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _isLoggedIn = false;
+
+  bool get isLoggedIn => _isLoggedIn;
 
   bool get obscurePassword => _obscurePassword;
   bool get isLoading => _isLoading;
