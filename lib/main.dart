@@ -1,61 +1,72 @@
 import 'package:flutter/material.dart';
+import 'package:mobilev2/core/di/injection.dart';
 import 'package:mobilev2/viewmodels/auth/login_viewmodel.dart';
-import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/views/auth/login_view.dart';
-import 'package:mobilev2/views/home/main_page.dart';
-import 'package:mobilev2/views/splash/splash_view.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'core/navigation/navigation_service.dart';
+import 'core/services/auth_service.dart';
+import 'data/repositories/auth_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setBool('isLoggedIn', false); // or prefs.remove('isLoggedIn');
+  await setupDependencyInjection();
+
+  final navigationService = NavigationService();
+  final authService = AuthService();
+  final authRepository = AuthRepository(authService);
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => LoginViewModel(),
-      child: const MyApp(),
-    ),
+    MultiProvider(providers: [
+      Provider<NavigationService>(create: (_) => navigationService),
+      Provider<AuthRepository>(create: (_) => authRepository),
+    ],
+    child: MyApp(),
+    )
   );
 }
-
-class MyApp extends StatelessWidget {
+class MyApp extends StatelessWidget{
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Chatbot travel Viet Nam',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue),
+      home: ChangeNotifierProvider(
+        create: (context) => LoginViewModel(
+          context.read<AuthRepository>(),
+          context.read<NavigationService>(),
+        ),
+        child: LoginView(),
       ),
-      home: SplashView(),
-
-      //routes configuration
-      routes: {
-        '/login': (context) => ChangeNotifierProvider(
-            create: (_) => LoginViewModel(),
-            child: const LoginView(),
-        ),
-        '/home': (context) => ChangeNotifierProvider(
-            create: (_) => MainViewModel(),
-            child: const MainPage(),
-        ),
-      },
-
-      //Check status login
-      onGenerateRoute: (settings){
-        final isLoggedIn = Provider.of<LoginViewModel>(context, listen: false).isLoggedIn;
-        if (settings.name == '/') {
-          return MaterialPageRoute(
-            builder: (_) => isLoggedIn ? const MainPage() : const LoginView(),
-          );
-        }
-        return null;
-      },
     );
   }
 }
+
+// lib/
+// │
+// ├── core/
+// │   ├── navigation/            # Centralized NavigationService
+// │   ├── services/              # API services, AuthService, etc.
+// │   ├── models/                # Data models (User, etc.)
+// │   ├── utils/                 # Helpers, constants, validators
+// │   └── di/                    # Dependency Injection setup (GetIt)
+// │
+// ├── data/                      # Data sources, repositories
+// │   └── repositories/
+// │       └── auth_repository.dart
+// │
+// ├── viewmodels/                # ViewModels for each feature
+// │   ├── login_viewmodel.dart
+// │   └── home_viewmodel.dart
+// │
+// ├── views/                     # UI Screens
+// │   ├── login/
+// │   │   └── login_view.dart
+// │   └── home/
+// │       └── home_view.dart
+// │
+// ├── widgets/                   # Common reusable widgets
+// │
+// ├── app.dart                   # App widget, initial routing
+// └── main.dart                  # Entry point
+

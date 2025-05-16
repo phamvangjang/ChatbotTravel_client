@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:mobilev2/services/auth/auth_service.dart';
+import 'package:mobilev2/core/navigation/navigation_service.dart';
+import 'package:mobilev2/data/repositories/auth_repository.dart';
+import 'package:mobilev2/routes/app_routes.dart';
 
 class LoginViewModel extends ChangeNotifier {
-  final AuthService _authService = AuthService();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final AuthRepository _authRepository ;
+  final NavigationService _navigationService;
 
   bool _obscurePassword = true;
   bool _isLoading = false;
   String? _errorMessage;
-  bool _isLoggedIn = false;
-
-  bool get isLoggedIn => _isLoggedIn;
 
   bool get obscurePassword => _obscurePassword;
   bool get isLoading => _isLoading;
   bool get canLogin => _validateInputs();
   String? get errorMessage => _errorMessage;
 
-  LoginViewModel(){
+  LoginViewModel(this._authRepository, this._navigationService){
     emailController.addListener(_onTextChanged);
     passwordController.addListener(_onTextChanged);
   }
@@ -45,23 +45,34 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   Future<bool> login() async {
-    if(!canLogin) return false;
+    if (!canLogin) return false;
+
     _isLoading = true;
     notifyListeners();
-    try{
-      final success = await _authService.login(emailController.text.trim(), passwordController.text.trim());
-      if(!success){
+    bool result = false;
+
+    try {
+      print('[LoginViewModel] Attempting login...');
+      final success = await _authRepository.login(emailController.text.trim(), passwordController.text.trim());
+      print('[LoginViewModel] Login success: $success');
+
+      if (!success) {
         _errorMessage = 'Email or Password was invalid';
+      } else {
+        _navigationService.replaceWith(AppRoutes.home);
+        result = true;
       }
-      return success;
-    }catch(e){
-      _errorMessage = 'Somethings went wrong, please try later again';
+    } catch (e, stack) {
+      print('[LoginViewModel] Exception: $e');
+      print(stack); // Print full stacktrace
+      _errorMessage = 'Something went wrong, please try again later';
       return false;
-    }
-    finally{
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
+
+    return result;
   }
 
   @override

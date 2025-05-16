@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
-import '../../services/auth/auth_service.dart';
-import '../../utils/shared_prefs.dart';
 
 class AuthViewModel extends ChangeNotifier{
-  final AuthService _authService = AuthService();
-
-  Future<bool> login(String email, String password) async {
-    final success = await _authService.login(email, password);
-    if (success) {
-      await SharedPrefs.setLoggedIn(true);
-    }
-    return success;
-  }
-
-  void logout() async {
-    await SharedPrefs.setLoggedIn(false);
-    notifyListeners();
-  }
+  // final AuthRepository _authRepo;
+  // bool _isLoading = false;
+  //
+  // AuthViewModel(this._authRepo);
+  //
+  // bool get isLoading => _isLoading;
+  // bool get isLoggedIn => _authRepo.isLoggedIn;
+  //
+  // Future<void> checkAuthStatus() async {
+  //   _isLoading = true;
+  //   notifyListeners();
+  //
+  //   await _authRepo.checkAuthStatus();
+  //
+  //   _isLoading = false;
+  //   notifyListeners();
+  // }
+  //
+  // Future<void> logout() async {
+  //   await _authRepo.logout();
+  //   notifyListeners();
+  // }
 }

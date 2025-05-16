@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../utils/shared_prefs.dart';
+import '../../core/utils/shared_prefs.dart';
 import '../auth/login_view.dart';
-import '../home/main_page.dart';
+import '../home/home_view.dart';
 
 class SplashView extends StatefulWidget{
   const SplashView({super.key});
@@ -23,12 +23,12 @@ class _SplashViewState extends State<SplashView> {
     if (isLoggedIn) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const MainPage()),
+        MaterialPageRoute(builder: (_) => HomeView()),
       );
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const LoginView()),
+        MaterialPageRoute(builder: (_) => LoginView()),
       );
     }
   }
