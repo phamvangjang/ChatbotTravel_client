@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth/login_viewmodel.dart';
 
-class LoginView extends StatefulWidget{
+class LoginView extends StatefulWidget {
   const LoginView({super.key});
 
   @override
@@ -10,7 +10,6 @@ class LoginView extends StatefulWidget{
 }
 
 class _LoginViewState extends State<LoginView> {
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -27,7 +26,10 @@ class _LoginViewState extends State<LoginView> {
                     children: [
                       const Text(
                         'Chatbot Travel Agents',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
@@ -41,7 +43,10 @@ class _LoginViewState extends State<LoginView> {
                         controller: viewModel.emailController,
                         decoration: const InputDecoration(
                           labelText: 'Email address',
-                          suffix: Text('Edit', style: TextStyle(color: Colors.blue)),
+                          suffix: Text(
+                            'Edit',
+                            style: TextStyle(color: Colors.blue),
+                          ),
                         ),
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
@@ -55,9 +60,11 @@ class _LoginViewState extends State<LoginView> {
                         decoration: InputDecoration(
                           labelText: 'Password',
                           suffixIcon: IconButton(
-                            icon: Icon(viewModel.obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility),
+                            icon: Icon(
+                              viewModel.obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
                             onPressed: viewModel.togglePasswordVisibility,
                           ),
                         ),
@@ -90,29 +97,36 @@ class _LoginViewState extends State<LoginView> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: viewModel.canLogin && !viewModel.isLoading
-                              ? () async {
-                            final success = await viewModel.login();
-                            if (success && context.mounted) {
-                              // Navigate to home on success
-                              Navigator.pushReplacementNamed(context, '/home');
-                              // print("📁 Value of success: "+ success.toString());
-                            }
-                          }
-                              : null,
+                          onPressed:
+                              viewModel.canLogin && !viewModel.isLoading
+                                  ? () async {
+                                    final success = await viewModel.login();
+                                    if (success && context.mounted) {
+                                      // Navigate to home on success
+                                      Navigator.pushReplacementNamed(
+                                        context,
+                                        '/home',
+                                      );
+                                    }
+                                  }
+                                  : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: viewModel.canLogin
-                                ? Colors.blue
-                                : Colors.blue.withOpacity(0.5),
+                            backgroundColor:
+                                viewModel.canLogin
+                                    ? Colors.blue
+                                    : Colors.blue.withOpacity(0.5),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8.0),
                             ),
                             side: BorderSide.none,
                           ),
-                          child: viewModel.isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text('Login'),
+                          child:
+                              viewModel.isLoading
+                                  ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                  : const Text('Login'),
                         ),
                       ),
 
@@ -134,11 +148,17 @@ class _LoginViewState extends State<LoginView> {
                       const SizedBox(height: 16),
 
                       /// Google button
-                      _buildOAuthButton("Continue with Google", Icons.g_mobiledata),
+                      _buildOAuthButton(
+                        "Continue with Google",
+                        Icons.g_mobiledata,
+                      ),
                       const SizedBox(height: 12),
 
                       // Microsoft button
-                      _buildOAuthButton("Continue with Microsoft Account", Icons.window),
+                      _buildOAuthButton(
+                        "Continue with Microsoft Account",
+                        Icons.window,
+                      ),
 
                       const SizedBox(height: 12),
 
@@ -176,9 +196,7 @@ class _LoginViewState extends State<LoginView> {
         foregroundColor: Colors.black,
         minimumSize: const Size(double.infinity, 48),
         alignment: Alignment.centerLeft,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.0),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         side: BorderSide.none,
       ),
     );

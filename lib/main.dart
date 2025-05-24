@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/auth/login_viewmodel.dart';
+import 'package:mobilev2/viewmodels/home/drawer_viewmodel.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/views/auth/login_view.dart';
+import 'package:mobilev2/views/home/drawer_view.dart';
 import 'package:mobilev2/views/home/main_page.dart';
 import 'package:mobilev2/views/splash/splash_view.dart';
 import 'package:provider/provider.dart';
@@ -43,6 +45,10 @@ class MyApp extends StatelessWidget {
         '/home': (context) => ChangeNotifierProvider(
             create: (_) => MainViewModel(),
             child: const MainPage(),
+        ),
+        '/draw': (context) => ChangeNotifierProvider(
+          create: (_) => DrawerViewModel(),
+          child: const DrawerView(),
         ),
       },
 
