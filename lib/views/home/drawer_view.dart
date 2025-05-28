@@ -71,7 +71,11 @@ class DrawerView extends StatelessWidget {
               ListTile(
                 leading: const CircleAvatar(child: Text("VG")),
                 title: const Text("Van Giang"),
-                onTap: () {},
+                onTap: () async {
+                  Navigator.pop(context); // đóng Drawer trước
+                  await Future.delayed(const Duration(milliseconds: 250)); // đợi một chút (tuỳ độ mượt mong muốn)
+                  Navigator.pushReplacementNamed(context, '/setting');
+                },
               ),
             ],
           ),

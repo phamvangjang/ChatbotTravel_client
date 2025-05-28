@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:mobilev2/services/auth/auth_service.dart';
+import '../../services/auth/auth_service.dart';
 
-class LoginViewModel extends ChangeNotifier {
+class RegisterViewModel extends ChangeNotifier{
   final AuthService _authService = AuthService();
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
@@ -15,24 +16,27 @@ class LoginViewModel extends ChangeNotifier {
 
   bool get obscurePassword => _obscurePassword;
   bool get isLoading => _isLoading;
-  bool get canLogin => _validateInputs();
+  bool get canRegister => _validateInputs();
   String? get errorMessage => _errorMessage;
 
-  LoginViewModel(){
+  RegisterViewModel(){
+    usernameController.addListener(_onTextChanged);
     emailController.addListener(_onTextChanged);
     passwordController.addListener(_onTextChanged);
   }
 
   bool _validateInputs() {
+    final username = usernameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
     _errorMessage = null;
 
+    final usernameValid = username.isNotEmpty;
     final emailValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
     final passwordValid = password.length >= 6;
 
-    return emailValid && passwordValid;
+    return emailValid && passwordValid && usernameValid;
   }
 
   void togglePasswordVisibility(){
@@ -44,8 +48,8 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login() async {
-    if(!canLogin) return false;
+  Future<bool> register() async {
+    if(!canRegister) return false;
     _isLoading = true;
     notifyListeners();
     try{
@@ -64,8 +68,8 @@ class LoginViewModel extends ChangeNotifier {
     }
   }
 
-  void goToRegister(BuildContext context) {
-    Navigator.pushReplacementNamed(context, '/register');
+  void goToLogin(BuildContext context) {
+    Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override

@@ -33,7 +33,7 @@ class _LoginViewState extends State<LoginView> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Authentication to continue',
+                        'Sign In to continue',
                         style: TextStyle(fontSize: 16),
                       ),
                       const SizedBox(height: 32),
@@ -136,7 +136,7 @@ class _LoginViewState extends State<LoginView> {
                         children: [
                           const Text("Don't have an account? "),
                           TextButton(
-                            onPressed: () {},
+                            onPressed: () => viewModel.goToRegister(context),
                             child: const Text('Sign up'),
                           ),
                         ],
