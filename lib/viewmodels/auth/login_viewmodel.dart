@@ -14,11 +14,14 @@ class LoginViewModel extends ChangeNotifier {
   bool get isLoggedIn => _isLoggedIn;
 
   bool get obscurePassword => _obscurePassword;
+
   bool get isLoading => _isLoading;
+
   bool get canLogin => _validateInputs();
+
   String? get errorMessage => _errorMessage;
 
-  LoginViewModel(){
+  LoginViewModel() {
     emailController.addListener(_onTextChanged);
     passwordController.addListener(_onTextChanged);
   }
@@ -35,7 +38,7 @@ class LoginViewModel extends ChangeNotifier {
     return emailValid && passwordValid;
   }
 
-  void togglePasswordVisibility(){
+  void togglePasswordVisibility() {
     _obscurePassword = !_obscurePassword;
     notifyListeners();
   }
@@ -45,20 +48,22 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   Future<bool> login() async {
-    if(!canLogin) return false;
+    if (!canLogin) return false;
     _isLoading = true;
     notifyListeners();
-    try{
-      final success = await _authService.login(emailController.text.trim(), passwordController.text.trim());
-      if(!success){
+    try {
+      final success = await _authService.login(
+        emailController.text.trim(),
+        passwordController.text.trim(),
+      );
+      if (!success) {
         _errorMessage = 'Email or Password was invalid';
       }
       return success;
-    }catch(e){
+    } catch (e) {
       _errorMessage = 'Somethings went wrong, please try later again';
       return false;
-    }
-    finally{
+    } finally {
       _isLoading = false;
       notifyListeners();
     }

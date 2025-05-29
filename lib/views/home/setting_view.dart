@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-// import 'package:mobilev2/viewmodels/home/setting_viewmodel.dart';
-// import 'package:provider/provider.dart';
+import 'package:mobilev2/viewmodels/home/setting_viewmodel.dart';
+import 'package:provider/provider.dart';
 
 class SettingView extends StatefulWidget{
   const SettingView({super.key});
@@ -12,7 +12,7 @@ class SettingView extends StatefulWidget{
 class _SettingView extends State<SettingView> {
   @override
   Widget build(BuildContext context){
-    // final viewmodel = Provider.of<SettingViewModel>(context);
+    final viewmodel = Provider.of<SettingViewModel>(context);
 
     final List<Map<String, dynamic>> settings = [
       {
@@ -70,7 +70,7 @@ class _SettingView extends State<SettingView> {
             title: Text(item['title']),
             subtitle:
             item.containsKey('subtitle') ? Text(item['subtitle']) : null,
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            // trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
               // Xử lý khi nhấn
             },
