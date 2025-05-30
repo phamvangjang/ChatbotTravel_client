@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth/auth_service.dart';
 
-class RegisterViewModel extends ChangeNotifier{
+class RegisterViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -15,11 +15,14 @@ class RegisterViewModel extends ChangeNotifier{
   bool get isLoggedIn => _isLoggedIn;
 
   bool get obscurePassword => _obscurePassword;
+
   bool get isLoading => _isLoading;
+
   bool get canRegister => _validateInputs();
+
   String? get errorMessage => _errorMessage;
 
-  RegisterViewModel(){
+  RegisterViewModel() {
     usernameController.addListener(_onTextChanged);
     emailController.addListener(_onTextChanged);
     passwordController.addListener(_onTextChanged);
@@ -39,7 +42,7 @@ class RegisterViewModel extends ChangeNotifier{
     return emailValid && passwordValid && usernameValid;
   }
 
-  void togglePasswordVisibility(){
+  void togglePasswordVisibility() {
     _obscurePassword = !_obscurePassword;
     notifyListeners();
   }
@@ -49,25 +52,32 @@ class RegisterViewModel extends ChangeNotifier{
   }
 
   Future<bool> register() async {
-    if(!canRegister) return false;
+    if (!canRegister) return false;
     _isLoading = true;
     notifyListeners();
-    try{
-      final success = await _authService.login(emailController.text.trim(), passwordController.text.trim());
-      if(!success){
-        _errorMessage = 'Email or Password was invalid';
+    try {
+      final result = await _authService.register(
+        emailController.text.trim(),
+        passwordController.text.trim(),
+        usernameController.text.trim(),
+      );
+      if (!(result['success'] as bool)) {
+        print("==============result false: \n");
+        print(result);
+        _errorMessage = result['message'];
+      }else{
+        print("==============result true: \n");
+        print(result);
       }
-      return success;
-    }catch(e){
-      _errorMessage = 'Somethings went wrong, please try later again';
+      return result['success'] as bool;
+    } catch (e) {
+      _errorMessage = 'Error occurred: $e';
       return false;
-    }
-    finally{
+    } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
-
   void goToLogin(BuildContext context) {
     Navigator.pushReplacementNamed(context, '/login');
   }
@@ -77,6 +87,7 @@ class RegisterViewModel extends ChangeNotifier{
     // TODO: implement dispose
     emailController.dispose();
     passwordController.dispose();
+    usernameController.dispose();
     super.dispose();
   }
 }

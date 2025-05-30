@@ -1,36 +1,34 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobilev2/services/api_service.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../models/user_model.dart';
-import '../../providers/user_provider.dart';
-
 class AuthService {
-  Future<bool> login(String email, String password) async {
-    final response = await http.post(
-      Uri.parse(ApiService.loginUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
-    );
-    if (response.statusCode == 200) {
-      print('response ' + response.body);
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiService.loginUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+
       final data = jsonDecode(response.body);
-      final token = data['token'];
-      final userJson = data['user'];
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', token);
-      await prefs.setString('user', jsonEncode(userJson));
-
-      // final user = UserModel.fromJson(userJson);
-      // Provider.of<UserProvider>(context, listen: false).setUser(user);
-      return true;
+      if (response.statusCode == 200) {
+        print("data: ${jsonEncode(data)}");
+        return {
+          'success': true,
+          'message': 'Login was successful',
+          'user': data['user'],       // ✅ Trả thêm user
+          'token': data['token'],
+        };
+      } else {
+        print("data: ${jsonEncode(data)}");
+        return {'success': false, 'message': data['message']};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error occurred: $e'};
     }
-    print('response ' + response.body);
-    return false;
   }
 
   Future<bool> isLoggedIn() async {
@@ -42,6 +40,7 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
     await prefs.remove('user');
+    await prefs.setBool('isLoggedIn', false);
   }
 
   Future<String?> getToken() async {
@@ -49,10 +48,52 @@ class AuthService {
     return prefs.getString('token');
   }
 
-  Future<bool> register(String username, String email, String password) async {
-    await Future.delayed(const Duration(seconds: 2));
-    return username == 'van giang' &&
-        email == 'giang@gmail.com' &&
-        password == '123456';
+  Future<Map<String, dynamic>> register(String email,String password,String username,) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiService.registerUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'full_name': username,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        print("data: ${jsonEncode(data)}");
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Register successful',
+        };
+      } else {
+        print("data: ${jsonEncode(data)}");
+        return {'success': false, 'message': data['message']};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error occurred: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyOtp(String email, String otp) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiService.verifyOtpUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'otp_code': otp}),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        print("data: ${jsonEncode(data)}");
+        return {'success': true, 'message': data['message']};
+      } else {
+        print("data: ${jsonEncode(data)}");
+        return {'success': false, 'message': data['message']};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error occurred: $e'};
+    }
   }
 }

@@ -14,4 +14,11 @@ class UserProvider extends ChangeNotifier{
     _userModel = null;
     notifyListeners();
   }
+
+  void setUserIfAvailable(UserModel? user) {
+    if (user != null) {
+      _userModel = user;
+      notifyListeners();
+    }
+  }
 }

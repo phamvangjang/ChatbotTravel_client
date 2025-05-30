@@ -100,7 +100,7 @@ class _LoginViewState extends State<LoginView> {
                           onPressed:
                               viewModel.canLogin && !viewModel.isLoading
                                   ? () async {
-                                    final success = await viewModel.login();
+                                    final success = await viewModel.login(context);
                                     if (success && context.mounted) {
                                       // Navigate to home on success
                                       Navigator.pushReplacementNamed(

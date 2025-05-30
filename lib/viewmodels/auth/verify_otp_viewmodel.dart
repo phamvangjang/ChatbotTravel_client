@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../services/auth/auth_service.dart';
 
-class VerifyOtpViewModel extends ChangeNotifier{
+class VerifyOtpViewModel extends ChangeNotifier {
+  final AuthService _authService = AuthService();
+  final TextEditingController emailController = TextEditingController();
+
   String otpCode = '';
   bool isLoading = false;
   String errorMessage = '';
@@ -17,18 +21,18 @@ class VerifyOtpViewModel extends ChangeNotifier{
     isLoading = true;
     errorMessage = '';
     notifyListeners();
-
     try {
-      await Future.delayed(const Duration(seconds: 2)); // giả lập API
-
-      if (otpCode == '123456') {
-        return true;
-      } else {
-        errorMessage = 'Mã OTP không đúng. Vui lòng thử lại.';
-        return false;
+      final result = await _authService.verifyOtp(
+        emailController.text.trim(),
+        otpCode,
+      );
+      if (!(result['success'] as bool)) {
+        print(result);
+        errorMessage = result['message'];
       }
+      return result['success'] as bool;
     } catch (e) {
-      errorMessage = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+      errorMessage = 'Somethings went wrong, please try later again';
       return false;
     } finally {
       isLoading = false;

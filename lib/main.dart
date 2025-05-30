@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:mobilev2/providers/user_provider.dart';
 import 'package:mobilev2/viewmodels/auth/login_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/register_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/verify_otp_viewmodel.dart';
@@ -14,18 +17,21 @@ import 'package:mobilev2/views/home/setting_view.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'models/user_model.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  // await prefs.setBool('isLoggedIn', false); // or prefs.remove('isLoggedIn');
 
+  // Khởi tạo UserProvider với dữ liệu SharedPreferences nếu có
+  UserModel? user;
+  final userJson = prefs.getString('user');
+  if (userJson != null) {
+    user = UserModel.fromJson(jsonDecode(userJson));
+  }
 
   runApp(
-    // ChangeNotifierProvider(
-    //   create: (_) => LoginViewModel(),
-    //   child: const MyApp(),
-    // ),
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LoginViewModel()),
@@ -34,6 +40,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => MainViewModel()),
         ChangeNotifierProvider(create: (_) => SettingViewModel()),
         ChangeNotifierProvider(create: (_) => DrawerViewModel()),
+        ChangeNotifierProvider(create: (_) => UserProvider()..setUserIfAvailable(user)),
       ],
       child: MyApp(isLoggedIn: isLoggedIn),
     ),
@@ -53,7 +60,6 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue),
       ),
-      // home: SplashView(),
 
       initialRoute: isLoggedIn ? '/home' : '/login',
       routes: {
@@ -64,17 +70,6 @@ class MyApp extends StatelessWidget {
         '/setting': (context) => const SettingView(),
         '/draw': (context) => const DrawerView(),
       },
-
-      //Check status login
-      // onGenerateRoute: (settings){
-      //   final isLoggedIn = Provider.of<LoginViewModel>(context, listen: false).isLoggedIn;
-      //   if (settings.name == '/') {
-      //     return MaterialPageRoute(
-      //       builder: (_) => isLoggedIn ? const MainPage() : const LoginView(),
-      //     );
-      //   }
-      //   return null;
-      // },
     );
   }
 }

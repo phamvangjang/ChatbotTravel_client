@@ -15,6 +15,18 @@ class _VerifyOtpViewState extends State<VerifyOtpView>{
   final List<FocusNode> focusNodes = List.generate(6, (_) => FocusNode());
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final emailArg = ModalRoute.of(context)?.settings.arguments as String?;
+      if (emailArg != null) {
+        final viewModel = Provider.of<VerifyOtpViewModel>(context, listen: false);
+        viewModel.emailController.text = emailArg;
+      }
+    });
+  }
+
+  @override
   void dispose() {
     for (final controller in controllers) {
       controller.dispose();
@@ -94,7 +106,7 @@ class _VerifyOtpViewState extends State<VerifyOtpView>{
                     ? () async {
                   final success = await viewModel.verifyOtp();
                   if (success && context.mounted) {
-                    Navigator.pushReplacementNamed(context, '/home');
+                    Navigator.pushReplacementNamed(context, '/login');
                   }
                 }
                     : null,

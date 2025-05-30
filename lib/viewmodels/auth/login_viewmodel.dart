@@ -1,5 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobilev2/services/auth/auth_service.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../models/user_model.dart';
+import '../../providers/user_provider.dart';
 
 class LoginViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -47,21 +52,45 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login() async {
+  Future<bool> login(BuildContext context) async {
     if (!canLogin) return false;
     _isLoading = true;
     notifyListeners();
     try {
-      final success = await _authService.login(
+      final result = await _authService.login(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
-      if (!success) {
-        _errorMessage = 'Email or Password was invalid';
+
+      if (!(result['success'] as bool)) {
+        print("==============result false: \n");
+        print(result);
+        _errorMessage = result['message'];
+      }else{
+        print("==============result true: \n");
+        print(result);
       }
-      return success;
+
+      if (result.containsKey('user')) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user', jsonEncode(result['user']));
+      }
+
+      // ✅ Lưu token nếu có
+      if (result.containsKey('token')) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', result['token']);
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString('user');
+      if (userJson != null) {
+        final user = UserModel.fromJson(jsonDecode(userJson));
+        Provider.of<UserProvider>(context, listen: false).setUser(user);
+      }
+      return result['success'] as bool;
     } catch (e) {
-      _errorMessage = 'Somethings went wrong, please try later again';
+      _errorMessage = 'Error occurred: $e';
       return false;
     } finally {
       _isLoading = false;

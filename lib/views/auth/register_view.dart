@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/auth/register_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -112,6 +111,7 @@ class _RegisterViewState extends State<RegisterView> {
                               Navigator.pushReplacementNamed(
                                 context,
                                 '/verify_otp',
+                                arguments: viewModel.emailController.text.trim(),
                               );
                             }
                           }

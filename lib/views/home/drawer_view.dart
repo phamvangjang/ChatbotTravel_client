@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:mobilev2/views/home/setting_view.dart';
+import 'package:provider/provider.dart';
+
+import '../../providers/user_provider.dart';
 
 class DrawerView extends StatelessWidget {
   const DrawerView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<UserProvider>(context).user;
     return Drawer(
       child: Container(
         color: Colors.white,
@@ -22,18 +26,6 @@ class DrawerView extends StatelessWidget {
                   ),
                 ),
               ),
-              // const ListTile(
-              //   leading: Icon(Icons.explore),
-              //   title: Text("Khám phá GPT"),
-              // ),
-              // const ListTile(
-              //   leading: Icon(Icons.library_books),
-              //   title: Text("Thư viện"),
-              //   trailing: CircleAvatar(
-              //     radius: 12,
-              //     child: Text("4", style: TextStyle(fontSize: 12)),
-              //   ),
-              // ),
               const Divider(),
               Expanded(
                 child: ListView(
@@ -56,8 +48,10 @@ class DrawerView extends StatelessWidget {
               ),
               const Divider(),
               ListTile(
-                leading: const CircleAvatar(child: Text("VG")),
-                title: const Text("Van Giang"),
+                leading: CircleAvatar(child: Text(
+                  (user?.username.substring(0, 2).toUpperCase() ?? ''),
+                )),
+                title: Text(user?.username ?? 'Invalid'),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
