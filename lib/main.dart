@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:mobilev2/providers/user_provider.dart';
 import 'package:mobilev2/viewmodels/auth/login_viewmodel.dart';
@@ -12,7 +11,7 @@ import 'package:mobilev2/views/auth/login_view.dart';
 import 'package:mobilev2/views/auth/register_view.dart';
 import 'package:mobilev2/views/auth/verify_otp_view.dart';
 import 'package:mobilev2/views/home/drawer_view.dart';
-import 'package:mobilev2/views/home/main_page.dart';
+import 'package:mobilev2/views/home/main_view.dart';
 import 'package:mobilev2/views/home/setting_view.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';

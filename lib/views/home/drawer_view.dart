@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobilev2/views/home/setting_view.dart';
 import 'package:provider/provider.dart';
-
 import '../../providers/user_provider.dart';
 
 class DrawerView extends StatelessWidget {
@@ -11,6 +10,7 @@ class DrawerView extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = Provider.of<UserProvider>(context).user;
     return Drawer(
+      backgroundColor: const Color(0xFFF7F7F8),
       child: Container(
         color: Colors.white,
         child: SafeArea(

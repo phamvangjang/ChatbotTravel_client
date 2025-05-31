@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/shared_prefs.dart';
-import '../home/main_page.dart';
+import '../home/main_view.dart';
 import 'login_view.dart';
 
 class AuthWrapper extends StatelessWidget{

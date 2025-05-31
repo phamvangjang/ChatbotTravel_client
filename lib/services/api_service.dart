@@ -11,4 +11,6 @@ class ApiService {
   static String get resetPasswordUrl => "$_baseUrl/auth/reset-password";
 
   //chat
+  static String get chatbotUrl => "$_baseUrl/travel/chat";
+  static String get chatbotVoiceUrl => "$_baseUrl/travel/ask/voice";
 }
