@@ -63,11 +63,11 @@ class LoginViewModel extends ChangeNotifier {
       );
 
       if (!(result['success'] as bool)) {
-        print("==============result false: \n");
+        print("==============result false==============: \n");
         print(result);
         _errorMessage = result['message'];
       }else{
-        print("==============result true: \n");
+        print("==============result true==============: \n");
         print(result);
       }
 

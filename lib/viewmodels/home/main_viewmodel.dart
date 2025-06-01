@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mobilev2/views/home/fullmap_view.dart';
+import 'package:mobilev2/views/home/map_screen.dart';
 import '../../models/message_model.dart';
 import '../../services/home/geocoding_service.dart';
-import '../../views/home/map_view.dart';
 
 class MainViewModel extends ChangeNotifier {
   GeocodingService geocodingService = GeocodingService();
@@ -40,9 +39,6 @@ class MainViewModel extends ChangeNotifier {
 
     if (locations.isEmpty) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => MapScreen(locations: locations)),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => MapViewScreen()));
   }
 }

@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:mobilev2/providers/user_provider.dart';
 import 'package:mobilev2/viewmodels/auth/login_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/register_viewmodel.dart';
@@ -22,14 +24,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
   final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-
   // Khởi tạo UserProvider với dữ liệu SharedPreferences nếu có
   UserModel? user;
   final userJson = prefs.getString('user');
   if (userJson != null) {
     user = UserModel.fromJson(jsonDecode(userJson));
   }
-
+  await dotenv.load(fileName: ".env");
+  String token = dotenv.env["MAPBOX_ACCESS_TOKEN"] ?? '';
+  MapboxOptions.setAccessToken(token);
   runApp(
     MultiProvider(
       providers: [

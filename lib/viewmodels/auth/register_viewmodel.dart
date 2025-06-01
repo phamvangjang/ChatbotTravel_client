@@ -62,16 +62,16 @@ class RegisterViewModel extends ChangeNotifier {
         usernameController.text.trim(),
       );
       if (!(result['success'] as bool)) {
-        print("==============result false: \n");
+        print("==============result false==============: \n");
         print(result);
         _errorMessage = result['message'];
       }else{
-        print("==============result true: \n");
+        print("==============result true==============: \n");
         print(result);
       }
       return result['success'] as bool;
     } catch (e) {
-      _errorMessage = 'Error occurred: $e';
+      _errorMessage = '==============Error occurred==============: $e';
       return false;
     } finally {
       _isLoading = false;
