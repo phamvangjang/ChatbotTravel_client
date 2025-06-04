@@ -39,6 +39,7 @@ class _SettingView extends State<SettingView> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Setting')),
+      backgroundColor: const Color(0xFFF7F7F8),
       body: ListView(
         children: [
           ListTile(

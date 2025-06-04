@@ -31,4 +31,39 @@ class Message {
       sentAt: DateTime.parse(json['sent_at']),
     );
   }
+
+  Map<String, dynamic> toJson(){
+    return{
+      'message_id': messageId,
+      'conversation_id': conversationId,
+      'sender': sender,
+      'message_text': messageText,
+      'translated_text': translatedText,
+      'message_type': messageType,
+      'voice_url': voiceUrl,
+      'sent_at': sentAt.toIso8601String()
+    };
+  }
+
+  Message copyWith({
+    int? messageId,
+    int? conversationId,
+    String? sender,
+    String? messageText,
+    String? translatedText,
+    String? messageType,
+    String? voiceUrl,
+    DateTime? sentAt,
+  }) {
+    return Message(
+      messageId: messageId ?? this.messageId,
+      conversationId: conversationId ?? this.conversationId,
+      sender: sender ?? this.sender,
+      messageText: messageText ?? this.messageText,
+      translatedText: translatedText ?? this.translatedText,
+      messageType: messageType ?? this.messageType,
+      voiceUrl: voiceUrl ?? this.voiceUrl,
+      sentAt: sentAt ?? this.sentAt,
+    );
+  }
 }

@@ -53,7 +53,6 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Icon(Icons.edit_note, color: Colors.grey),
           ),
         ],
-        // leading: const Icon(Icons.menu, color: Colors.grey),
       ),
       drawer: const DrawerView(),
       backgroundColor: const Color(0xFFF7F7F8),
@@ -79,23 +78,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isUser = msg.sender.toLowerCase() == 'user';
-                    // return Column(
-                    //   crossAxisAlignment:
-                    //       isUser
-                    //           ? CrossAxisAlignment.end
-                    //           : CrossAxisAlignment.start,
-                    //   children: [
-                    //     ChatBubble(
-                    //       message:
-                    //           msg.translatedText.isNotEmpty
-                    //               ? msg.translatedText
-                    //               : msg.messageText,
-                    //       isUser: isUser,
-                    //       showActions: !isUser,
-                    //     ),
-                    //     const SizedBox(height: 8),
-                    //   ],
-                    // );
                     return Column(
                       crossAxisAlignment:
                           isUser
@@ -115,27 +97,36 @@ class _ChatScreenState extends State<ChatScreen> {
                                       : msg.messageText,
                               isUser: isUser,
                               showActions: !isUser,
+                              extraAction:
+                                  (!isUser &&
+                                          (msg.messageText.contains(
+                                                "Địa điểm:",
+                                              ) ||
+                                              msg.translatedText.contains(
+                                                "Địa điểm:",
+                                              )))
+                                      ? IconButton(
+                                        icon: const Icon(
+                                          Icons.map,
+                                          color: Colors.blue,
+                                          size: 16,
+                                        ),
+                                        onPressed:
+                                            (msg.translatedText.isNotEmpty ||
+                                                    msg.messageText.isNotEmpty)
+                                                ? () => mainViewModel
+                                                    .openMapWithMessageText(
+                                                      context,
+                                                      msg
+                                                              .translatedText
+                                                              .isNotEmpty
+                                                          ? msg.translatedText
+                                                          : msg.messageText,
+                                                    )
+                                                : null,
+                                      )
+                                      : null,
                             ),
-                            if (!isUser &&
-                                (msg.messageText.contains("Địa điểm:") ||
-                                    msg.translatedText.contains("Địa điểm:")))
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.travel_explore_rounded,
-                                  color: Colors.blue,
-                                ),
-                                onPressed:
-                                    (msg.translatedText.isNotEmpty ||
-                                            msg.messageText.isNotEmpty)
-                                        ? () => mainViewModel
-                                            .openMapWithMessageText(
-                                              context,
-                                              msg.translatedText.isNotEmpty
-                                                  ? msg.translatedText
-                                                  : msg.messageText,
-                                            )
-                                        : null,
-                              ),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -158,12 +149,14 @@ class ChatBubble extends StatelessWidget {
   final String message;
   final bool isUser;
   final bool showActions;
+  final Widget? extraAction;
 
   const ChatBubble({
     super.key,
     required this.message,
     required this.isUser,
     this.showActions = false,
+    this.extraAction,
   });
 
   @override
@@ -192,12 +185,15 @@ class ChatBubble extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 4.0),
             child: Row(
-              children: const [
-                Icon(Icons.thumb_up_off_alt, size: 16, color: Colors.grey),
+              children: [
+                Icon(Icons.thumb_up, size: 16, color: Colors.blue),
                 SizedBox(width: 8),
-                Icon(Icons.thumb_down_off_alt, size: 16, color: Colors.grey),
+                Icon(Icons.thumb_down, size: 16, color: Colors.orange),
                 SizedBox(width: 8),
                 Icon(Icons.refresh, size: 16, color: Colors.grey),
+                if (extraAction != null) ...[
+                  extraAction!,
+                ],
               ],
             ),
           ),

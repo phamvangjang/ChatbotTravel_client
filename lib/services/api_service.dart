@@ -12,5 +12,13 @@ class ApiService {
 
   //chat
   static String get chatbotUrl => "$_baseUrl/travel/chat";
+  static String get createNewConversationUrl => "$_baseUrl/travel/conversations";
+  static String getUserConversationsUrl(int userId) =>
+      "$_baseUrl/travel/conversations/$userId/messages";
+  static String messagesByConversationUrl(int conversationId) =>
+      "$_baseUrl/travel/conversations/$conversationId/messages";
+  static String get saveMessageUrl => "$_baseUrl/travel/messages";
+  static String endConversationUrl(int conversationId) =>
+      "$_baseUrl/travel/conversations/$conversationId/end";
   static String get chatbotVoiceUrl => "$_baseUrl/travel/ask/voice";
 }
