@@ -6,7 +6,6 @@ import 'package:mobilev2/providers/user_provider.dart';
 import 'package:mobilev2/viewmodels/auth/login_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/register_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/verify_otp_viewmodel.dart';
-import 'package:mobilev2/viewmodels/home/drawer_viewmodel.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/viewmodels/home/setting_viewmodel.dart';
 import 'package:mobilev2/views/auth/login_view.dart';

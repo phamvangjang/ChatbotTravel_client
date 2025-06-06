@@ -27,7 +27,7 @@ class ApiService {
       "$_baseUrl/chatting/conversations/list?user_id=$userId";
 
   static String messagesByConversationUrl(int conversationId) =>
-      "$_baseUrl/chatting/conversations/$conversationId";
+      "$_baseUrl/chatting/conversations/messages?conversation_id=$conversationId";
 
   static String get saveMessageUrl => "$_baseUrl/chatting/messages";
 

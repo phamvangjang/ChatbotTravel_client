@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/views/home/drawer_view.dart';
+import 'package:mobilev2/views/widgets/chat_input.dart';
 import 'package:provider/provider.dart';
 import '../../models/message_model.dart';
 
@@ -28,14 +29,19 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final MainViewModel mainViewModel = MainViewModel();
+  late MainViewModel mainViewModel = MainViewModel();
   late Future<List<Message>> futureMessages;
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    futureMessages = mainViewModel.loadMessages();
+    mainViewModel = context.read<MainViewModel>();
+
+    // Khởi tạo dữ liệu khi widget được tạo
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      mainViewModel.initialize();
+    });
   }
 
   @override
@@ -115,20 +121,12 @@ class _ChatScreenState extends State<ChatScreen> {
               const SizedBox(height: 12),
 
               // Danh sách tin nhắn
-              Expanded(
-                child: _buildMessagesList(mainViewModel),
-              ),
+              Expanded(child: _buildMessagesList(mainViewModel)),
               const Divider(height: 1),
               ChatInput(
                 onSendMessage: (message) {
                   mainViewModel.sendMessage(message);
                   // Scroll xuống cuối sau khi gửi tin nhắn
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _scrollToBottom();
-                  });
-                },
-                onSendAudio: () {
-                  mainViewModel.sendAudioMessage();
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     _scrollToBottom();
                   });
@@ -298,67 +296,67 @@ class ChatBubble extends StatelessWidget {
   }
 }
 
-class ChatInput extends StatefulWidget {
-  final Function(String message) onSendMessage;
-  final Function() onSendAudio;
-  final bool isEnabled;
-
-  const ChatInput({
-    super.key,
-    required this.onSendMessage,
-    required this.onSendAudio,
-    required this.isEnabled,
-  });
-
-  @override
-  State<ChatInput> createState() => _ChatInputState();
-}
-
-class _ChatInputState extends State<ChatInput> {
-  final TextEditingController _controller = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 12).copyWith(bottom: 12),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.mic_none_outlined),
-            onPressed: widget.isEnabled ? widget.onSendAudio : null,
-          ),
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              enabled: widget.isEnabled,
-              decoration: const InputDecoration(
-                hintText: "Ask anything",
-                border: InputBorder.none,
-              ),
-              onSubmitted: (value) {
-                if (value.trim().isNotEmpty) {
-                  widget.onSendMessage(value.trim());
-                  _controller.clear();
-                }
-              },
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed:
-                widget.isEnabled
-                    ? () {
-                      final text = _controller.text.trim();
-                      if (text.isNotEmpty) {
-                        widget.onSendMessage(text);
-                        _controller.clear();
-                      }
-                    }
-                    : null,
-          ),
-        ],
-      ),
-    );
-  }
-}
+// class ChatInput extends StatefulWidget {
+//   final Function(String message) onSendMessage;
+//   final Function() onSendAudio;
+//   final bool isEnabled;
+//
+//   const ChatInput({
+//     super.key,
+//     required this.onSendMessage,
+//     required this.onSendAudio,
+//     required this.isEnabled,
+//   });
+//
+//   @override
+//   State<ChatInput> createState() => _ChatInputState();
+// }
+//
+// class _ChatInputState extends State<ChatInput> {
+//   final TextEditingController _controller = TextEditingController();
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       color: Colors.white,
+//       padding: const EdgeInsets.symmetric(horizontal: 12).copyWith(bottom: 12),
+//       child: Row(
+//         children: [
+//           IconButton(
+//             icon: const Icon(Icons.mic_none_outlined),
+//             onPressed: widget.isEnabled ? widget.onSendAudio : null,
+//           ),
+//           Expanded(
+//             child: TextField(
+//               controller: _controller,
+//               enabled: widget.isEnabled,
+//               decoration: const InputDecoration(
+//                 hintText: "Ask anything",
+//                 border: InputBorder.none,
+//               ),
+//               onSubmitted: (value) {
+//                 if (value.trim().isNotEmpty) {
+//                   widget.onSendMessage(value.trim());
+//                   _controller.clear();
+//                 }
+//               },
+//             ),
+//           ),
+//           IconButton(
+//             icon: const Icon(Icons.send),
+//             onPressed:
+//                 widget.isEnabled
+//                     ? () {
+//                       final text = _controller.text.trim();
+//                       if (text.isNotEmpty) {
+//                         widget.onSendMessage(text);
+//                         _controller.clear();
+//                       }
+//                     }
+//                     : null,
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }

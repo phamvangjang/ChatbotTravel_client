@@ -75,12 +75,14 @@ class ChatService {
         headers: {'Content-Type': 'application/json'},
       );
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
+        final Map<String, dynamic> jsonMap = jsonDecode(response.body);
+        final List<dynamic> jsonData = jsonMap['data'];
         return jsonData.map((json) => Message.fromJson(json)).toList();
       } else {
         throw Exception('Không thể tải tin nhắn');
       }
     } catch (e) {
+      print('Lỗi tải tin nhắn: $e');
       throw Exception('Lỗi tải tin nhắn: $e');
     }
   }

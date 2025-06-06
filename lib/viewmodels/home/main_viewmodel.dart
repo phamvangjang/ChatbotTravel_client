@@ -2,12 +2,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobilev2/models/conversation.dart';
+import 'package:mobilev2/services/home/voice_service.dart';
+import 'package:record/record.dart';
 import '../../models/message_model.dart';
 import '../../services/home/chat_service.dart';
 import '../../services/home/geocoding_service.dart';
 
 class MainViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
+  final VoiceService _voiceService = VoiceService();
 
   // State variables
   List<Message> _messages = [];
@@ -15,24 +18,29 @@ class MainViewModel extends ChangeNotifier {
   Conversation? _currentConversation;
   bool _isLoading = false;
   bool _isSending = false;
+  bool _isRecording = false;
   String? _error;
-  int _currentUserId = 1; // Thay thế bằng user ID thực tế
+  int _currentUserId = 8;
   String _sourceLanguage = 'vi';
 
   // Getters
   List<Message> get messages => _messages;
-
   List<Conversation> get conversations => _conversations;
-
   Conversation? get currentConversation => _currentConversation;
-
   bool get isLoading => _isLoading;
-
   bool get isSending => _isSending;
-
+  //bool get isRecording => _isRecording;
+  bool get isRecording {
+    print("Getter isRecording: $_isRecording");
+    return _isRecording;
+  }
   String? get error => _error;
-
   int get currentUserId => _currentUserId;
+
+  // Lấy amplitude stream để tạo waveform
+  Stream<Amplitude>? getAmplitudeStream() {
+    return _voiceService.getAmplitudeStream();
+  }
 
   // Khởi tạo ViewModel
   Future<void> initialize() async {
@@ -109,7 +117,7 @@ class MainViewModel extends ChangeNotifier {
     }
   }
 
-  // Gửi tin nhắn
+  // Gửi tin nhắn dạng text
   Future<void> sendMessage(String messageText) async {
     if (_currentConversation == null || messageText.trim().isEmpty) return;
 
@@ -145,6 +153,95 @@ class MainViewModel extends ChangeNotifier {
       _setError(e.toString());
     } finally {
       _setSending(false);
+    }
+  }
+
+  // Bắt đầu ghi âm
+  Future<void> startVoiceRecording() async {
+    clearError();
+
+    try {
+      final success = await _voiceService.startRecording();
+      if (success) {
+        _isRecording = true;
+        notifyListeners();
+      }
+    } catch (e) {
+      _setError(e.toString());
+    }
+  }
+
+  // Dừng ghi âm và gửi tin nhắn giọng nói
+  Future<void> stopVoiceRecording() async {
+    if (!_isRecording) return;
+
+    _setSending(true);
+    _isRecording = false;
+    notifyListeners();
+
+    try {
+      final filePath = await _voiceService.stopRecording();
+      if (filePath == null || filePath.isEmpty) {
+        throw Exception('Không thể lưu file ghi âm');
+      }
+
+      // Upload và chuyển đổi giọng nói thành text
+      final voiceResult = await _voiceService.uploadVoiceAndConvertToText(filePath);
+      final transcribedText = voiceResult['text'] as String;
+      final voiceUrl = voiceResult['voice_url'] as String;
+
+      if (transcribedText.isEmpty) {
+        throw Exception('Không thể nhận diện giọng nói. Vui lòng thử lại.');
+      }
+
+      // Lưu tin nhắn giọng nói của user
+      final userMessage = await _chatService.saveMessage(
+        conversationId: _currentConversation!.conversationId,
+        sender: 'user',
+        messageText: transcribedText,
+        messageType: 'voice',
+        voiceUrl: voiceUrl,
+      );
+
+      _messages.add(userMessage);
+      notifyListeners();
+
+      // Gửi text đã chuyển đổi đến chatbot
+      final botResponse = await _chatService.sendMessageToBot(transcribedText);
+
+      // Lưu phản hồi của bot
+      final botMessage = await _chatService.saveMessage(
+        conversationId: _currentConversation!.conversationId,
+        sender: 'bot',
+        messageText: botResponse['message'] ?? '',
+        translatedText: botResponse['translated_message'] ?? '',
+      );
+
+      _messages.add(botMessage);
+      notifyListeners();
+
+      // Xóa file tạm
+      await _voiceService.deleteTemporaryFile(filePath);
+
+    } catch (e) {
+      _setError(e.toString());
+      _isRecording = false;
+      notifyListeners();
+    } finally {
+      _setSending(false);
+    }
+  }
+
+  // Hủy ghi âm
+  Future<void> cancelVoiceRecording() async {
+    if (!_isRecording) return;
+
+    try {
+      await _voiceService.cancelRecording();
+      _isRecording = false;
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
     }
   }
 
@@ -211,6 +308,11 @@ class MainViewModel extends ChangeNotifier {
     print("sendAudioMessage");
   }
 
+  @override
+  void dispose() {
+    _voiceService.dispose();
+    super.dispose();
+  }
 
   GeocodingService geocodingService = GeocodingService();
 
@@ -221,30 +323,4 @@ class MainViewModel extends ChangeNotifier {
         (jsonMap['messages'] as List).map((e) => Message.fromJson(e)).toList();
     return messages;
   }
-
-  // Future<void> openMapWithMessageText(
-  //   BuildContext context,
-  //   String messageText,
-  // ) async {
-  //   print(context);
-  //   print(messageText);
-  //   if (!messageText.contains("Địa điểm:")) return;
-  //
-  //   final extracted = messageText.split("Địa điểm:")[1];
-  //   final suggestions = extracted.split(",");
-  //   final places = suggestions.map((e) => e.trim()).toList();
-  //
-  //   final List<Map<String, dynamic>> locations = [];
-  //
-  //   for (final place in places) {
-  //     final coords = await geocodingService.getCoordinatesFromMapbox(place);
-  //     if (coords != null) {
-  //       locations.add({"name": place, "lat": coords[0], "lng": coords[1]});
-  //     }
-  //   }
-  //
-  //   if (locations.isEmpty) return;
-  //
-  //   Navigator.push(context, MaterialPageRoute(builder: (_) => MapViewScreenv2()));
-  // }
 }
