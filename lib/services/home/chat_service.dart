@@ -25,7 +25,7 @@ class ChatService {
   }
 
   // Tạo cuộc trò chuyện mới
-  Future<Conversation> createNewConversation(int userId, String sourceLanguage) async {
+  Future<Conversation> createNewConversation(int userId, String sourceLanguage,) async {
     try {
       final response = await http.post(
         Uri.parse(ApiService.createNewConversationUrl),
@@ -85,14 +85,7 @@ class ChatService {
   }
 
   // Lưu tin nhắn vào database
-  Future<Message> saveMessage({
-    required int conversationId,
-    required String sender,
-    required String messageText,
-    String translatedText = '',
-    String messageType = 'text',
-    String? voiceUrl,
-  }) async {
+  Future<Message> saveMessage({required int conversationId,required String sender,required String messageText,String translatedText = '',String messageType = 'text',String? voiceUrl,}) async {
     try {
       final response = await http.post(
         Uri.parse(ApiService.saveMessageUrl),

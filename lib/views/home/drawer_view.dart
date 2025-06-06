@@ -48,9 +48,11 @@ class DrawerView extends StatelessWidget {
               ),
               const Divider(),
               ListTile(
-                leading: CircleAvatar(child: Text(
-                  (user?.username.substring(0, 2).toUpperCase() ?? ''),
-                )),
+                leading: CircleAvatar(
+                  child: Text(
+                    (user?.username.substring(0, 2).toUpperCase() ?? ''),
+                  ),
+                ),
                 title: Text(user?.username ?? 'Invalid'),
                 onTap: () {
                   Navigator.pop(context);

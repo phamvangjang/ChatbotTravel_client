@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/views/home/drawer_view.dart';
+import 'package:provider/provider.dart';
 import '../../models/message_model.dart';
 
 void main() {
@@ -29,6 +30,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final MainViewModel mainViewModel = MainViewModel();
   late Future<List<Message>> futureMessages;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -37,110 +39,206 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
         title: const Text(
-          "Travel Assistant - HCM City",
+          "AI Agent Travel",
           style: TextStyle(color: Colors.black),
         ),
         elevation: 1,
         centerTitle: true,
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: Icon(Icons.edit_note, color: Colors.grey),
+        actions: [
+          // Nút tạo cuộc trò chuyện mới
+          IconButton(
+            icon: const Icon(Icons.edit_note, color: Colors.grey),
+            onPressed: () {
+              mainViewModel.startNewConversation();
+            },
+          ),
+          // Nút refresh
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.grey),
+            onPressed: () {
+              mainViewModel.refresh();
+            },
           ),
         ],
       ),
       drawer: const DrawerView(),
       backgroundColor: const Color(0xFFF7F7F8),
-      body: Column(
-        children: [
-          const SizedBox(height: 12),
-          Expanded(
-            child: FutureBuilder<List<Message>>(
-              future: futureMessages,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+      body: Consumer<MainViewModel>(
+        builder: (context, mainViewModel, child) {
+          return Column(
+            children: [
+              // Hiển thị error nếu có
+              if (mainViewModel.error != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  color: Colors.red.shade100,
+                  child: Row(
+                    children: [
+                      Icon(Icons.error, color: Colors.red.shade800, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          mainViewModel.error!,
+                          style: TextStyle(color: Colors.red.shade800),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 16),
+                        onPressed: () => mainViewModel.clearError(),
+                      ),
+                    ],
+                  ),
+                ),
 
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text("Không có tin nhắn nào."));
-                }
+              const SizedBox(height: 12),
 
-                final messages = snapshot.data!;
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = messages[index];
-                    final isUser = msg.sender.toLowerCase() == 'user';
-                    return Column(
-                      crossAxisAlignment:
-                          isUser
-                              ? CrossAxisAlignment.end
-                              : CrossAxisAlignment.start,
-                      children: [
-                        Column(
-                          crossAxisAlignment:
-                              isUser
-                                  ? CrossAxisAlignment.end
-                                  : CrossAxisAlignment.start,
-                          children: [
-                            ChatBubble(
-                              message:
+              // Danh sách tin nhắn
+              Expanded(
+                child: _buildMessagesList(mainViewModel),
+              ),
+              const Divider(height: 1),
+              ChatInput(
+                onSendMessage: (message) {
+                  mainViewModel.sendMessage(message);
+                  // Scroll xuống cuối sau khi gửi tin nhắn
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scrollToBottom();
+                  });
+                },
+                onSendAudio: () {
+                  mainViewModel.sendAudioMessage();
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scrollToBottom();
+                  });
+                },
+                isEnabled: !mainViewModel.isSending,
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMessagesList(MainViewModel mainViewModel) {
+    if (mainViewModel.isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text("Đang tải cuộc trò chuyện..."),
+          ],
+        ),
+      );
+    }
+
+    if (mainViewModel.messages.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              "Chào mừng bạn đến với Travel Assistant!\nHãy bắt đầu cuộc trò chuyện.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      itemCount:
+          mainViewModel.messages.length + (mainViewModel.isSending ? 1 : 0),
+      itemBuilder: (context, index) {
+        // Hiển thị loading indicator khi đang gửi
+        if (index == mainViewModel.messages.length && mainViewModel.isSending) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                SizedBox(width: 40),
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 12),
+                Text("Đang trả lời...", style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          );
+        }
+
+        final msg = mainViewModel.messages[index];
+        final isUser = msg.sender.toLowerCase() == 'user';
+
+        return Column(
+          crossAxisAlignment:
+              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            ChatBubble(
+              message:
+                  msg.translatedText.isNotEmpty
+                      ? msg.translatedText
+                      : msg.messageText,
+              isUser: isUser,
+              showActions: !isUser,
+              extraAction:
+                  (!isUser &&
+                          (msg.messageText.contains("Địa điểm:") ||
+                              msg.translatedText.contains("Địa điểm:")))
+                      ? IconButton(
+                        icon: const Icon(
+                          Icons.map,
+                          color: Colors.blue,
+                          size: 16,
+                        ),
+                        onPressed:
+                            (msg.translatedText.isNotEmpty ||
+                                    msg.messageText.isNotEmpty)
+                                ? () => mainViewModel.openMapWithMessageText(
+                                  context,
                                   msg.translatedText.isNotEmpty
                                       ? msg.translatedText
                                       : msg.messageText,
-                              isUser: isUser,
-                              showActions: !isUser,
-                              extraAction:
-                                  (!isUser &&
-                                          (msg.messageText.contains(
-                                                "Địa điểm:",
-                                              ) ||
-                                              msg.translatedText.contains(
-                                                "Địa điểm:",
-                                              )))
-                                      ? IconButton(
-                                        icon: const Icon(
-                                          Icons.map,
-                                          color: Colors.blue,
-                                          size: 16,
-                                        ),
-                                        onPressed:
-                                            (msg.translatedText.isNotEmpty ||
-                                                    msg.messageText.isNotEmpty)
-                                                ? () => mainViewModel
-                                                    .openMapWithMessageText(
-                                                      context,
-                                                      msg
-                                                              .translatedText
-                                                              .isNotEmpty
-                                                          ? msg.translatedText
-                                                          : msg.messageText,
-                                                    )
-                                                : null,
-                                      )
-                                      : null,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                    );
-                  },
-                );
-              },
+                                )
+                                : null,
+                      )
+                      : null,
             ),
-          ),
-          const Divider(height: 1),
-          ChatInput(),
-        ],
-      ),
+            const SizedBox(height: 8),
+          ],
+        );
+      },
     );
   }
 }
@@ -191,9 +289,7 @@ class ChatBubble extends StatelessWidget {
                 Icon(Icons.thumb_down, size: 16, color: Colors.orange),
                 SizedBox(width: 8),
                 Icon(Icons.refresh, size: 16, color: Colors.grey),
-                if (extraAction != null) ...[
-                  extraAction!,
-                ],
+                if (extraAction != null) ...[extraAction!],
               ],
             ),
           ),
@@ -202,35 +298,64 @@ class ChatBubble extends StatelessWidget {
   }
 }
 
-class ChatInput extends StatelessWidget {
-  const ChatInput({super.key});
+class ChatInput extends StatefulWidget {
+  final Function(String message) onSendMessage;
+  final Function() onSendAudio;
+  final bool isEnabled;
+
+  const ChatInput({
+    super.key,
+    required this.onSendMessage,
+    required this.onSendAudio,
+    required this.isEnabled,
+  });
+
+  @override
+  State<ChatInput> createState() => _ChatInputState();
+}
+
+class _ChatInputState extends State<ChatInput> {
+  final TextEditingController _controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12.0,
-      ).copyWith(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12).copyWith(bottom: 12),
       child: Row(
         children: [
           IconButton(
             icon: const Icon(Icons.mic_none_outlined),
-            onPressed: () {},
+            onPressed: widget.isEnabled ? widget.onSendAudio : null,
           ),
-          const Expanded(
+          Expanded(
             child: TextField(
-              decoration: InputDecoration(
+              controller: _controller,
+              enabled: widget.isEnabled,
+              decoration: const InputDecoration(
                 hintText: "Ask anything",
                 border: InputBorder.none,
               ),
+              onSubmitted: (value) {
+                if (value.trim().isNotEmpty) {
+                  widget.onSendMessage(value.trim());
+                  _controller.clear();
+                }
+              },
             ),
           ),
           IconButton(
             icon: const Icon(Icons.send),
-            onPressed: () {
-              // Navigator.pushNamed(context, '/home');
-            },
+            onPressed:
+                widget.isEnabled
+                    ? () {
+                      final text = _controller.text.trim();
+                      if (text.isNotEmpty) {
+                        widget.onSendMessage(text);
+                        _controller.clear();
+                      }
+                    }
+                    : null,
           ),
         ],
       ),

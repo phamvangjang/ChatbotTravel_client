@@ -8,6 +8,7 @@ import '../../services/home/geocoding_service.dart';
 
 class MainViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
+
   // State variables
   List<Message> _messages = [];
   List<Conversation> _conversations = [];
@@ -20,11 +21,17 @@ class MainViewModel extends ChangeNotifier {
 
   // Getters
   List<Message> get messages => _messages;
+
   List<Conversation> get conversations => _conversations;
+
   Conversation? get currentConversation => _currentConversation;
+
   bool get isLoading => _isLoading;
+
   bool get isSending => _isSending;
+
   String? get error => _error;
+
   int get currentUserId => _currentUserId;
 
   // Khởi tạo ViewModel
@@ -44,7 +51,7 @@ class MainViewModel extends ChangeNotifier {
   // Tải danh sách cuộc trò chuyện của user
   Future<void> loadUserConversations() async {
     _setLoading(true);
-    _clearError();
+    clearError();
 
     try {
       _conversations = await _chatService.getUserConversations(_currentUserId);
@@ -61,12 +68,12 @@ class MainViewModel extends ChangeNotifier {
   // Tải một cuộc trò chuyện cụ thể
   Future<void> loadConversation(int conversationId) async {
     _setLoading(true);
-    _clearError();
+    clearError();
 
     try {
       // Tìm cuộc trò chuyện trong danh sách
       _currentConversation = _conversations.firstWhere(
-            (conv) => conv.conversationId == conversationId,
+        (conv) => conv.conversationId == conversationId,
       );
 
       // Tải tin nhắn của cuộc trò chuyện
@@ -82,7 +89,7 @@ class MainViewModel extends ChangeNotifier {
   // Tạo cuộc trò chuyện mới
   Future<void> createNewConversation() async {
     _setLoading(true);
-    _clearError();
+    clearError();
 
     try {
       final newConversation = await _chatService.createNewConversation(
@@ -107,10 +114,11 @@ class MainViewModel extends ChangeNotifier {
     if (_currentConversation == null || messageText.trim().isEmpty) return;
 
     _setSending(true);
-    _clearError();
+    clearError();
 
     try {
       // Lưu tin nhắn của user
+      print("sendMessage");
       final userMessage = await _chatService.saveMessage(
         conversationId: _currentConversation!.conversationId,
         sender: 'user',
@@ -133,7 +141,6 @@ class MainViewModel extends ChangeNotifier {
 
       _messages.add(botMessage);
       notifyListeners();
-
     } catch (e) {
       _setError(e.toString());
     } finally {
@@ -145,7 +152,9 @@ class MainViewModel extends ChangeNotifier {
   Future<void> startNewConversation() async {
     if (_currentConversation != null) {
       try {
-        await _chatService.endConversation(_currentConversation!.conversationId);
+        await _chatService.endConversation(
+          _currentConversation!.conversationId,
+        );
       } catch (e) {
         // Log error nhưng vẫn tiếp tục tạo cuộc trò chuyện mới
         debugPrint('Lỗi kết thúc cuộc trò chuyện: $e');
@@ -186,7 +195,7 @@ class MainViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _clearError() {
+  void clearError() {
     _error = null;
   }
 
@@ -196,6 +205,12 @@ class MainViewModel extends ChangeNotifier {
     _sourceLanguage = language;
     initialize(); // Tải lại dữ liệu cho user mới
   }
+
+  void sendAudioMessage() async {
+    // Ghi âm hoặc chọn file âm thanh rồi gửi lên server
+    print("sendAudioMessage");
+  }
+
 
   GeocodingService geocodingService = GeocodingService();
 
