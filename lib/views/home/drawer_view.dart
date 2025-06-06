@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobilev2/viewmodels/home/drawer_viewmodel.dart';
 import 'package:mobilev2/views/home/setting_view.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
@@ -9,6 +10,28 @@ class DrawerView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<UserProvider>(context).user;
+
+    if (user == null) {
+      return const Center(child: Text('Người dùng chưa đăng nhập'));
+    }
+
+    return ChangeNotifierProvider(
+      create: (_) => DrawerViewModel(user.id),
+      child: const _DrawerContent(), // Đặt UI chính ở widget con
+    );
+  }
+}
+
+class _DrawerContent extends StatelessWidget {
+  const _DrawerContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = Provider.of<DrawerViewModel>(context);
+    final conversations = viewModel.conversations;
+    final isLoading = viewModel.isLoading;
+    final user = Provider.of<UserProvider>(context).user;
+
     return Drawer(
       backgroundColor: const Color(0xFFF7F7F8),
       child: Container(
@@ -28,23 +51,23 @@ class DrawerView extends StatelessWidget {
               ),
               const Divider(),
               Expanded(
-                child: ListView(
-                  children: const [
-                    ListTile(title: Text("Chào hỏi trợ giúp")),
-                    ListTile(title: Text("Dự báo thời tiết hôm nay")),
-                    ListTile(title: Text("MVVM Flutter Project Setup")),
-                    ListTile(title: Text("Dịch ghi âm và lọc")),
-                    ListTile(title: Text("AudioFiles và SelectedRecording")),
-                    ListTile(title: Text("XAML MVVM WPF Recorder")),
-                    ListTile(title: Text("MVVM Flutter Folder Structure")),
-                    ListTile(title: Text("Chạy FastAPI với Uvicorn")),
-                    ListTile(title: Text("Ứng dụng ấn tượng cho Fullstack")),
-                    ListTile(title: Text("Chào hỏi trợ giúp")),
-                    ListTile(title: Text("Dự báo thời tiết hôm nay")),
-                    ListTile(title: Text("MVVM Flutter Project Setup")),
-                    ListTile(title: Text("Dịch ghi âm và lọc")),
-                  ],
-                ),
+                child:
+                    isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : ListView.builder(
+                          itemCount: conversations.length,
+                          itemBuilder: (context, index) {
+                            final convo = conversations[index];
+                            return ListTile(
+                              title: Text(
+                                "Cuộc trò chuyện ${convo.conversationId}",
+                              ),
+                              subtitle: Text(
+                                "Ngôn ngữ: ${convo.sourceLanguage}",
+                              ),
+                            );
+                          },
+                        ),
               ),
               const Divider(),
               ListTile(

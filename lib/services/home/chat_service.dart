@@ -56,8 +56,9 @@ class ChatService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
-        return jsonData.map((json) => Conversation.fromJson(json)).toList();
+        final Map<String, dynamic> jsonData = jsonDecode(response.body);
+        final List<dynamic> data = jsonData['data'];
+        return data.map((json) => Conversation.fromJson(json)).toList();
       } else {
         throw Exception('Không thể tải danh sách cuộc trò chuyện');
       }

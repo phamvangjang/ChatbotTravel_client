@@ -41,7 +41,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => VerifyOtpViewModel()),
         ChangeNotifierProvider(create: (_) => MainViewModel()),
         ChangeNotifierProvider(create: (_) => SettingViewModel()),
-        ChangeNotifierProvider(create: (_) => DrawerViewModel()),
+        // ChangeNotifierProvider(create: (_) => DrawerViewModel(user!.id)),
         ChangeNotifierProvider(create: (_) => UserProvider()..setUserIfAvailable(user)),
       ],
       child: MyApp(isLoggedIn: isLoggedIn),

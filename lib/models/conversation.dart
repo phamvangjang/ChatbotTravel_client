@@ -2,7 +2,7 @@ class Conversation {
   final int conversationId;
   final int userId;
   final DateTime startedAt;
-  final DateTime endedAt;
+  final DateTime? endedAt;
   final String sourceLanguage;
 
   Conversation({
@@ -17,8 +17,10 @@ class Conversation {
     return Conversation(
       conversationId: json['conversation_id'],
       userId: json['user_id'],
-      startedAt: json['started_at'],
-      endedAt: json['ended_at'],
+      startedAt: DateTime.parse(json['started_at']),
+      endedAt: json['ended_at'] != null
+          ? DateTime.parse(json['ended_at'])
+          : null,
       sourceLanguage: json['source_language']
     );
   }
@@ -28,7 +30,7 @@ class Conversation {
       'conversation_id': conversationId,
       'user_id': userId,
       'started_at': startedAt.toIso8601String(),
-      'ended_at': endedAt.toIso8601String(),
+      'ended_at': endedAt?.toIso8601String(),
       'source_language': sourceLanguage
     };
   }
