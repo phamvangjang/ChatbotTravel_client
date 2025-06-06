@@ -77,7 +77,8 @@ class MainViewModel extends ChangeNotifier {
   Future<void> loadConversation(int conversationId) async {
     _setLoading(true);
     clearError();
-
+    print("conversationId");
+    print(conversationId);
     try {
       // Tìm cuộc trò chuyện trong danh sách
       _currentConversation = _conversations.firstWhere(

@@ -67,7 +67,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginView(),
         '/register': (context) => const RegisterView(),
         '/verify_otp': (context) => const VerifyOtpView(),
-        '/home': (context) => const MainPage(),
+        '/home': (context) => const MainView(),
         '/setting': (context) => const SettingView(),
         '/draw': (context) => const DrawerView(),
       },

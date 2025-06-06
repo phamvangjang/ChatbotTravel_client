@@ -3,9 +3,9 @@ class Message {
   final int conversationId;
   final String sender;
   final String messageText;
-  final String translatedText;
-  final String messageType;
-  final String voiceUrl;
+  final String? translatedText;
+  final String? messageType;
+  final String? voiceUrl;
   final DateTime sentAt;
 
   Message({
