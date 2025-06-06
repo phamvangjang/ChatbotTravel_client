@@ -127,7 +127,9 @@ class MainViewModel extends ChangeNotifier {
 
     try {
       // Lưu tin nhắn của user
-      print("sendMessage");
+      print("=================sendMessage=================");
+      print(_currentConversation!.conversationId);
+      print(messageText);
       final userMessage = await _chatService.saveMessage(
         conversationId: _currentConversation!.conversationId,
         sender: 'user',

@@ -294,32 +294,6 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
             ),
           ),
         ),
-
-        // Expanded(
-        //   child: Container(
-        //     decoration: BoxDecoration(
-        //       color: Colors.grey.shade100,
-        //       borderRadius: BorderRadius.circular(24),
-        //     ),
-        //     child: TextField(
-        //       controller: _controller,
-        //       enabled: widget.isEnabled && !viewModel.isRecording,
-        //       decoration: const InputDecoration(
-        //         hintText: 'Nhập tin nhắn...',
-        //         border: InputBorder.none,
-        //         contentPadding: EdgeInsets.symmetric(
-        //           horizontal: 20,
-        //           vertical: 12,
-        //         ),
-        //       ),
-        //       minLines: 1,
-        //       maxLines: 2, // Giới hạn hiển thị tối đa 2 dòng
-        //       textCapitalization: TextCapitalization.sentences,
-        //       keyboardType: TextInputType.multiline,
-        //       onSubmitted: (_) => _sendMessage(),
-        //     ),
-        //   ),
-        // ),
         const SizedBox(width: 8),
 
         // Nút microphone

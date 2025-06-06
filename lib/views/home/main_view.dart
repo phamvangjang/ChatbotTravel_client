@@ -15,7 +15,7 @@ class MainView extends StatefulWidget {
 }
 
 class _MainViewState extends State<MainView> {
-  late MainViewModel mainViewModel;
+  late MainViewModel viewModel;
   final ScrollController _scrollController = ScrollController();
 
   @override

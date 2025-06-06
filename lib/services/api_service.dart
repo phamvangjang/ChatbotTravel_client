@@ -32,7 +32,7 @@ class ApiService {
   static String get saveMessageUrl => "$_baseUrl/chatting/messages";
 
   static String endConversationUrl(int conversationId) =>
-      "$_baseUrl/chatting/conversations/end/$conversationId/end";
+      "$_baseUrl/chatting/conversations/end?conversation_id=$conversationId";
 
   static String get chatbotVoiceUrl => "$_baseUrl/chatting/messages/voice";
 }
