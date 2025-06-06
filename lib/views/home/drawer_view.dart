@@ -25,7 +25,7 @@ class DrawerView extends StatelessWidget {
 }
 
 class _DrawerContent extends StatefulWidget {
-  const _DrawerContent({super.key});
+  const _DrawerContent();
 
   @override
   State<_DrawerContent> createState() => _DrawerContentState();

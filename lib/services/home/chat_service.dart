@@ -5,27 +5,9 @@ import 'package:mobilev2/models/message_model.dart';
 import 'package:mobilev2/services/api_service.dart';
 
 class ChatService {
-  // Gửi tin nhắn đến chatbot
-  Future<Map<String, dynamic>> sendMessageToBot(String message) async {
-    try {
-      final response = await http.post(
-        Uri.parse(ApiService.chatbotUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'message': message}),
-      );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception('Lỗi server: ${response.body}');
-      }
-    } catch (e) {
-      throw Exception('Lỗi gửi tin nhắn: $e');
-    }
-  }
-
   // Tạo cuộc trò chuyện mới
-  Future<Conversation> createNewConversation(int userId, String sourceLanguage,) async {
+  Future<Conversation> createNewConversation(int userId, String sourceLanguage,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse(ApiService.createNewConversationUrl),
@@ -38,7 +20,9 @@ class ChatService {
       );
 
       if (response.statusCode == 201) {
-        return Conversation.fromJson(jsonDecode(response.body));
+        final responseData = jsonDecode(response.body);
+        final conversationJson = responseData['data'];
+        return Conversation.fromJson(conversationJson);
       } else {
         throw Exception('Không thể tạo cuộc trò chuyện mới');
       }
@@ -88,7 +72,14 @@ class ChatService {
   }
 
   // Lưu tin nhắn vào database
-  Future<Message> saveMessage({required int conversationId,required String sender,required String messageText,String translatedText = '',String messageType = 'text',String? voiceUrl,}) async {
+  Future<Map<String, dynamic>> sendMessageAndGetResponse({
+    required int conversationId,
+    required String sender,
+    required String messageText,
+    String translatedText = '',
+    String messageType = 'text',
+    String? voiceUrl,
+  }) async {
     try {
       final response = await http.post(
         Uri.parse(ApiService.saveMessageUrl),
@@ -105,19 +96,26 @@ class ChatService {
       );
 
       if (response.statusCode == 201) {
-        return Message.fromJson(jsonDecode(response.body));
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        // Kiểm tra status
+        if (responseData['status'] != 'success') {
+          throw Exception(responseData['message'] ?? 'Lỗi không xác định');
+        }
+
+        return responseData;
       } else {
-        throw Exception('Không thể lưu tin nhắn');
+        throw Exception('Lỗi server: ${response.statusCode}');
       }
     } catch (e) {
-      throw Exception('Lỗi lưu tin nhắn: $e');
+      throw Exception('Lỗi gửi tin nhắn: $e');
     }
   }
 
   // Kết thúc cuộc trò chuyện
   Future<void> endConversation(int conversationId) async {
     try {
-      final response = await http.put(
+      final response = await http.post(
         Uri.parse(ApiService.endConversationUrl(conversationId)),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'ended_at': DateTime.now().toIso8601String()}),

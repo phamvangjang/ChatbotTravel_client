@@ -11,6 +11,9 @@ import '../../services/home/geocoding_service.dart';
 class MainViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
   final VoiceService _voiceService = VoiceService();
+  final int _currentUserId;
+
+  MainViewModel(this._currentUserId);
 
   // State variables
   List<Message> _messages = [];
@@ -20,7 +23,6 @@ class MainViewModel extends ChangeNotifier {
   bool _isSending = false;
   bool _isRecording = false;
   String? _error;
-  int _currentUserId = 8;
   String _sourceLanguage = 'vi';
 
   // Getters
@@ -127,31 +129,28 @@ class MainViewModel extends ChangeNotifier {
 
     try {
       // Lưu tin nhắn của user
-      print("=================sendMessage=================");
-      print(_currentConversation!.conversationId);
-      print(messageText);
-      final userMessage = await _chatService.saveMessage(
+      final response = await _chatService.sendMessageAndGetResponse(
         conversationId: _currentConversation!.conversationId,
         sender: 'user',
         messageText: messageText,
       );
 
+      // Parse response data
+      final responseData = response['data'] as Map<String, dynamic>;
+
+      // Lấy user message từ response
+      final userMessageData = responseData['user_message'] as Map<String, dynamic>;
+      final userMessage = Message.fromJson(userMessageData);
+
+      // Lấy bot message từ response
+      final botMessageData = responseData['bot_message'] as Map<String, dynamic>;
+      final botMessage = Message.fromJson(botMessageData);
+
+      // Thêm cả 2 tin nhắn vào danh sách
       _messages.add(userMessage);
-      notifyListeners();
-
-      // Gửi tin nhắn đến chatbot
-      final botResponse = await _chatService.sendMessageToBot(messageText);
-
-      // Lưu phản hồi của bot
-      final botMessage = await _chatService.saveMessage(
-        conversationId: _currentConversation!.conversationId,
-        sender: 'bot',
-        messageText: botResponse['message'] ?? '',
-        translatedText: botResponse['translated_message'] ?? '',
-      );
-
       _messages.add(botMessage);
       notifyListeners();
+
     } catch (e) {
       _setError(e.toString());
     } finally {
@@ -198,7 +197,7 @@ class MainViewModel extends ChangeNotifier {
       }
 
       // Lưu tin nhắn giọng nói của user
-      final userMessage = await _chatService.saveMessage(
+      final response = await _chatService.sendMessageAndGetResponse(
         conversationId: _currentConversation!.conversationId,
         sender: 'user',
         messageText: transcribedText,
@@ -206,20 +205,19 @@ class MainViewModel extends ChangeNotifier {
         voiceUrl: voiceUrl,
       );
 
+      // Parse response data
+      final responseData = response['data'] as Map<String, dynamic>;
+
+      // Lấy user message từ response
+      final userMessageData = responseData['user_message'] as Map<String, dynamic>;
+      final userMessage = Message.fromJson(userMessageData);
+
+      // Lấy bot message từ response
+      final botMessageData = responseData['bot_message'] as Map<String, dynamic>;
+      final botMessage = Message.fromJson(botMessageData);
+
+      // Thêm cả 2 tin nhắn vào danh sách
       _messages.add(userMessage);
-      notifyListeners();
-
-      // Gửi text đã chuyển đổi đến chatbot
-      final botResponse = await _chatService.sendMessageToBot(transcribedText);
-
-      // Lưu phản hồi của bot
-      final botMessage = await _chatService.saveMessage(
-        conversationId: _currentConversation!.conversationId,
-        sender: 'bot',
-        messageText: botResponse['message'] ?? '',
-        translatedText: botResponse['translated_message'] ?? '',
-      );
-
       _messages.add(botMessage);
       notifyListeners();
 
@@ -301,7 +299,7 @@ class MainViewModel extends ChangeNotifier {
 
   // Setter cho user ID (khi user đăng nhập)
   void setCurrentUser(int userId, String language) {
-    _currentUserId = userId;
+    // _currentUserId = userId;
     _sourceLanguage = language;
     initialize(); // Tải lại dữ liệu cho user mới
   }
