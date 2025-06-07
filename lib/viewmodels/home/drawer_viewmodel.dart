@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/conversation.dart';
+import '../../models/conversation_model.dart';
 import '../../services/home/chat_service.dart';
 
 class DrawerViewModel extends ChangeNotifier {

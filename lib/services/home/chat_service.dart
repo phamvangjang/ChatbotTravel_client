@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:mobilev2/models/conversation.dart';
+import 'package:mobilev2/models/conversation_model.dart';
 import 'package:mobilev2/models/message_model.dart';
 import 'package:mobilev2/services/api_service.dart';
 

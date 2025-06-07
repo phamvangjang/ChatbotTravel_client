@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobilev2/models/conversation.dart';
+import 'package:mobilev2/models/conversation_model.dart';
 import 'package:mobilev2/services/home/voice_service.dart';
 import 'package:record/record.dart';
 import '../../models/message_model.dart';

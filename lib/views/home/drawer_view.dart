@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/home/drawer_viewmodel.dart';
 import 'package:mobilev2/views/home/setting_view.dart';
 import 'package:provider/provider.dart';
-import '../../models/conversation.dart';
+import '../../models/conversation_model.dart';
 import '../../providers/user_provider.dart';
 import '../../viewmodels/home/main_viewmodel.dart';
 
