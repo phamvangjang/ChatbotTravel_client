@@ -6,8 +6,7 @@ import 'package:mobilev2/services/api_service.dart';
 
 class ChatService {
   // Tạo cuộc trò chuyện mới
-  Future<Conversation> createNewConversation(int userId, String sourceLanguage,
-  ) async {
+  Future<Conversation> createNewConversation(int userId, String sourceLanguage,) async {
     try {
       final response = await http.post(
         Uri.parse(ApiService.createNewConversationUrl),

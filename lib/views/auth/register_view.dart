@@ -32,7 +32,7 @@ class _RegisterViewState extends State<RegisterView> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Sign Up to continue',
+                        'Đăng kí để tiếp tục',
                         style: TextStyle(fontSize: 16),
                       ),
                       const SizedBox(height: 32),
@@ -41,9 +41,9 @@ class _RegisterViewState extends State<RegisterView> {
                       TextField(
                         controller: viewModel.usernameController,
                         decoration: const InputDecoration(
-                          labelText: 'Username',
+                          labelText: 'Tên người dùng',
                           suffix: Text(
-                            'Edit',
+                            'Sửa',
                             style: TextStyle(color: Colors.blue),
                           ),
                         ),
@@ -56,9 +56,9 @@ class _RegisterViewState extends State<RegisterView> {
                       TextField(
                         controller: viewModel.emailController,
                         decoration: const InputDecoration(
-                          labelText: 'Email address',
+                          labelText: 'Địa chỉ Email',
                           suffix: Text(
-                            'Edit',
+                            'Sửa',
                             style: TextStyle(color: Colors.blue),
                           ),
                         ),
@@ -72,7 +72,7 @@ class _RegisterViewState extends State<RegisterView> {
                         controller: viewModel.passwordController,
                         obscureText: viewModel.obscurePassword,
                         decoration: InputDecoration(
-                          labelText: 'Password',
+                          labelText: 'Mật khẩu',
                           suffixIcon: IconButton(
                             icon: Icon(
                               viewModel.obscurePassword
@@ -140,45 +140,45 @@ class _RegisterViewState extends State<RegisterView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text("Already have an account? "),
+                          const Text("Bạn đã có tài khoản? "),
                           TextButton(
                             onPressed: () => viewModel.goToLogin(context),
-                            child: const Text('Sign In'),
+                            child: const Text('Đăng nhập'),
                           ),
                         ],
                       ),
 
                       const Divider(height: 32),
-                      const Text("OR"),
+                      const Text("hoặc"),
 
                       const SizedBox(height: 16),
 
                       /// Google button
                       _buildOAuthButton(
-                        "Continue with Google",
+                        "Tiếp tục với Google",
                         Icons.g_mobiledata,
                       ),
                       const SizedBox(height: 12),
 
                       // Microsoft button
                       _buildOAuthButton(
-                        "Continue with Microsoft Account",
+                        "Tiếp tục với Microsoft Account",
                         Icons.window,
                       ),
 
                       const SizedBox(height: 12),
 
                       // Apple button
-                      _buildOAuthButton("Continue with Apple", Icons.apple),
+                      _buildOAuthButton("Tiếp tục với Apple", Icons.apple),
 
                       const SizedBox(height: 32),
 
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
-                          Text('Terms of Use'),
+                          Text('Điều khoản sử dụng'),
                           SizedBox(width: 16),
-                          Text('Privacy Policy'),
+                          Text('Chính sách bảo mật'),
                         ],
                       ),
                     ],

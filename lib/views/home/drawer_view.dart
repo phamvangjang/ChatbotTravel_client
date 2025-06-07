@@ -134,35 +134,172 @@ class _DrawerContentState extends State<_DrawerContent> {
     }
   }
 
-  void _showNewConversationDialog(BuildContext context) {
+  void _handleNewConversationTap(BuildContext context) {
+    final mainViewModel = context.read<MainViewModel>();
+
+    // Kiểm tra xem cuộc trò chuyện hiện tại có tin nhắn hay không
+    final currentMessages = mainViewModel.messages;
+    final hasMessages = currentMessages.isNotEmpty;
+
+    if (!hasMessages) {
+      // Nếu chưa có tin nhắn, hiển thị thông báo
+      _showEmptyConversationWarning(context);
+    } else {
+      // Nếu đã có tin nhắn, cho phép tạo cuộc trò chuyện mới
+      _showNewConversationDialog(context);
+    }
+  }
+
+  void _showEmptyConversationWarning(BuildContext context) {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: const Text('Cuộc trò chuyện mới'),
-            content: const Text(
-              'Bạn có muốn bắt đầu cuộc trò chuyện mới không?',
+          (dialogContext) => AlertDialog(
+            icon: Icon(
+              Icons.info_outline,
+              color: Colors.orange.shade600,
+              size: 48,
+            ),
+            title: const Text(
+              'Cuộc trò chuyện trống',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Cuộc trò chuyện hiện tại chưa có tin nhắn nào.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Hãy gửi ít nhất một tin nhắn trước khi tạo cuộc trò chuyện mới.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(dialogContext); // Đóng dialog
+                  Navigator.pop(context); // Đóng drawer
+                },
+                child: const Text('Đã hiểu'),
+              ),
+            ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+    );
+  }
+
+  void _showNewConversationDialog(BuildContext context) {
+    // CAPTURE THE VIEWMODELS BEFORE SHOWING DIALOG
+    final mainViewModel = context.read<MainViewModel>();
+    final drawerViewModel = context.read<DrawerViewModel>();
+
+    showDialog(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            icon: Icon(
+              Icons.chat_bubble_outline,
+              color: Colors.blue.shade600,
+              size: 48,
+            ),
+            title: const Text(
+              'Cuộc trò chuyện mới',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Bạn có muốn bắt đầu cuộc trò chuyện mới không?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Cuộc trò chuyện hiện tại sẽ được lưu lại.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
                 child: const Text('Hủy'),
               ),
               ElevatedButton(
                 onPressed: () async {
-                  Navigator.pop(context); // Đóng dialog
+                  Navigator.pop(dialogContext); // Đóng dialog
                   Navigator.pop(context); // Đóng drawer
 
-                  final mainViewModel = context.read<MainViewModel>();
-                  await mainViewModel.startNewConversation();
+                  // Show loading indicator
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Row(
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Text('Đang tạo cuộc trò chuyện mới...'),
+                        ],
+                      ),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
 
-                  // Refresh drawer conversations
-                  final drawerViewModel = context.read<DrawerViewModel>();
-                  await drawerViewModel.loadConversations();
+                  try {
+                    // Use the captured viewmodels
+                    await mainViewModel.startNewConversation();
+
+                    // Refresh drawer conversations
+                    await drawerViewModel.loadConversations();
+
+                    // Show success message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Đã tạo cuộc trò chuyện mới thành công!'),
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  } catch (e) {
+                    // Show error message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Lỗi tạo cuộc trò chuyện: $e'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade600,
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text('Tạo mới'),
               ),
             ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
     );
   }
@@ -175,6 +312,7 @@ class _DrawerContentState extends State<_DrawerContent> {
         final isLoading = drawerViewModel.isLoading;
         final user = Provider.of<UserProvider>(context).user;
         final filteredConversations = _getFilteredConversations(conversations);
+        final hasMessages = mainViewModel.messages.isNotEmpty;
 
         return Drawer(
           backgroundColor: const Color(0xFFF7F7F8),
@@ -213,21 +351,64 @@ class _DrawerContentState extends State<_DrawerContent> {
                                 ),
                               ),
                             ),
-                            IconButton(
-                              onPressed:
-                                  () => _showNewConversationDialog(context),
-                              icon: const Icon(Icons.add, color: Colors.white),
-                              tooltip: 'Tạo cuộc trò chuyện mới',
+                            Stack(
+                              children: [
+                                IconButton(
+                                  onPressed: () => _handleNewConversationTap(context),
+                                  icon: const Icon(Icons.add, color: Colors.white),
+                                  tooltip: hasMessages
+                                      ? 'Tạo cuộc trò chuyện mới'
+                                      : 'Gửi tin nhắn trước khi tạo mới',
+                                ),
+                                // Hiển thị indicator nếu cuộc trò chuyện trống
+                                if (!hasMessages)
+                                  Positioned(
+                                    right: 8,
+                                    top: 8,
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.shade400,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          '${conversations.length} cuộc trò chuyện',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${conversations.length} cuộc trò chuyện',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            if (!hasMessages)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade400,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text(
+                                  'Trống',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),

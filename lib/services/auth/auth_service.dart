@@ -19,7 +19,7 @@ class AuthService {
         return {
           'success': true,
           'message': 'Login was successful',
-          'user': data['user'],       // ✅ Trả thêm user
+          'user': data['user'],
           'token': data['token'],
         };
       } else {

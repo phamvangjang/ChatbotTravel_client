@@ -33,7 +33,7 @@ class _LoginViewState extends State<LoginView> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Sign In to continue',
+                        'Đăng nhập để tiếp tục',
                         style: TextStyle(fontSize: 16),
                       ),
                       const SizedBox(height: 32),
@@ -42,7 +42,7 @@ class _LoginViewState extends State<LoginView> {
                       TextField(
                         controller: viewModel.emailController,
                         decoration: const InputDecoration(
-                          labelText: 'Email address',
+                          labelText: 'Địa chỉ Email',
                           suffix: Text(
                             'Edit',
                             style: TextStyle(color: Colors.blue),
@@ -58,7 +58,7 @@ class _LoginViewState extends State<LoginView> {
                         controller: viewModel.passwordController,
                         obscureText: viewModel.obscurePassword,
                         decoration: InputDecoration(
-                          labelText: 'Password',
+                          labelText: 'Mật khẩu',
                           suffixIcon: IconButton(
                             icon: Icon(
                               viewModel.obscurePassword
@@ -75,7 +75,7 @@ class _LoginViewState extends State<LoginView> {
                         alignment: Alignment.centerLeft,
                         child: TextButton(
                           onPressed: () {},
-                          child: const Text('Forgot password?'),
+                          child: const Text('Quên mật khẩu?'),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -126,7 +126,7 @@ class _LoginViewState extends State<LoginView> {
                                   ? const CircularProgressIndicator(
                                     color: Colors.white,
                                   )
-                                  : const Text('Login'),
+                                  : const Text('Đăng nhập'),
                         ),
                       ),
 
@@ -134,45 +134,45 @@ class _LoginViewState extends State<LoginView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text("Don't have an account? "),
+                          const Text("Bạn chưa có tài khoản?"),
                           TextButton(
                             onPressed: () => viewModel.goToRegister(context),
-                            child: const Text('Sign up'),
+                            child: const Text('Đăng kí ngay'),
                           ),
                         ],
                       ),
 
                       const Divider(height: 32),
-                      const Text("OR"),
+                      const Text("hoặc"),
 
                       const SizedBox(height: 16),
 
                       /// Google button
                       _buildOAuthButton(
-                        "Continue with Google",
+                        "Tiếp tục với Google",
                         Icons.g_mobiledata,
                       ),
                       const SizedBox(height: 12),
 
                       // Microsoft button
                       _buildOAuthButton(
-                        "Continue with Microsoft Account",
+                        "Tiếp tục với Microsoft Account",
                         Icons.window,
                       ),
 
                       const SizedBox(height: 12),
 
                       // Apple button
-                      _buildOAuthButton("Continue with Apple", Icons.apple),
+                      _buildOAuthButton("Tiếp tục với Apple", Icons.apple),
 
                       const SizedBox(height: 32),
 
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
-                          Text('Terms of Use'),
+                          Text('Điều khoản sử dụng'),
                           SizedBox(width: 16),
-                          Text('Privacy Policy'),
+                          Text('Chính sách bảo mật'),
                         ],
                       ),
                     ],
