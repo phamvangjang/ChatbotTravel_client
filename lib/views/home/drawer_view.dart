@@ -63,16 +63,15 @@ class _DrawerContentState extends State<_DrawerContent> {
   }
 
   String _getConversationTitle(Conversation conversation) {
-    final formattedTime = _formatDateTime(conversation.startedAt);
-    return 'Cuộc trò chuyện $formattedTime';
+    final conversationTitle = conversation.title;
+    return conversationTitle.toString();
   }
 
   String _getConversationSubtitle(Conversation conversation) {
+    final formattedTime = _formatDateTime(conversation.startedAt);
     final language =
         conversation.sourceLanguage == 'vi' ? 'Tiếng Việt' : 'English';
-    final startTime =
-        '${conversation.startedAt.hour.toString().padLeft(2, '0')}:${conversation.startedAt.minute.toString().padLeft(2, '0')}';
-    return '$language • $startTime';
+    return '$language • $formattedTime';
   }
 
   List<Conversation> _getFilteredConversations(

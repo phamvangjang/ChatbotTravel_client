@@ -1,12 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:mobilev2/models/conversation.dart';
 import 'package:mobilev2/services/home/voice_service.dart';
 import 'package:record/record.dart';
 import '../../models/message_model.dart';
 import '../../services/home/chat_service.dart';
-import '../../services/home/geocoding_service.dart';
 
 class MainViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
@@ -315,13 +312,4 @@ class MainViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  GeocodingService geocodingService = GeocodingService();
-
-  Future<List<Message>> loadMessages() async {
-    final jsonString = await rootBundle.loadString('assets/messages.json');
-    final jsonMap = json.decode(jsonString);
-    final messages =
-        (jsonMap['messages'] as List).map((e) => Message.fromJson(e)).toList();
-    return messages;
-  }
 }

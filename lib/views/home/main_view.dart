@@ -193,6 +193,69 @@ class _MainViewState extends State<MainView> {
     );
   }
 
+  void _handleNewConversationTap(BuildContext context) {
+    final mainViewModel = context.read<MainViewModel>();
+
+    // Kiểm tra xem cuộc trò chuyện hiện tại có tin nhắn hay không
+    final currentMessages = mainViewModel.messages;
+    final hasMessages = currentMessages.isNotEmpty;
+
+    if (!hasMessages) {
+      // Nếu chưa có tin nhắn, hiển thị thông báo
+      _showEmptyConversationWarning(context);
+    } else {
+      // Nếu đã có tin nhắn, cho phép tạo cuộc trò chuyện mới
+      mainViewModel.createNewConversation();
+    }
+  }
+
+  void _showEmptyConversationWarning(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(
+          Icons.info_outline,
+          color: Colors.orange.shade600,
+          size: 48,
+        ),
+        title: const Text(
+          'Cuộc trò chuyện trống',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Cuộc trò chuyện hiện tại chưa có tin nhắn nào.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Hãy gửi ít nhất một tin nhắn trước khi tạo cuộc trò chuyện mới.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext); // Đóng dialog
+            },
+            child: const Text('Đã hiểu'),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,9 +287,7 @@ class _MainViewState extends State<MainView> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_note, color: Colors.grey),
-            onPressed: () {
-              context.read<MainViewModel>().startNewConversation();
-            },
+            onPressed: () => _handleNewConversationTap(context),
             tooltip: 'Cuộc trò chuyện mới',
           ),
           IconButton(
@@ -554,4 +615,5 @@ class _MainViewState extends State<MainView> {
       },
     );
   }
+
 }
