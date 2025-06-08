@@ -14,7 +14,7 @@ class LoginViewModel extends ChangeNotifier {
   bool _obscurePassword = true;
   bool _isLoading = false;
   String? _errorMessage;
-  bool _isLoggedIn = false;
+  final bool _isLoggedIn = false;
 
   bool get isLoggedIn => _isLoggedIn;
 
@@ -56,6 +56,9 @@ class LoginViewModel extends ChangeNotifier {
     if (!canLogin) return false;
     _isLoading = true;
     notifyListeners();
+
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+
     try {
       final result = await _authService.login(
         emailController.text.trim(),
@@ -86,7 +89,8 @@ class LoginViewModel extends ChangeNotifier {
       final userJson = prefs.getString('user');
       if (userJson != null) {
         final user = UserModel.fromJson(jsonDecode(userJson));
-        Provider.of<UserProvider>(context, listen: false).setUser(user);
+        // Provider.of<UserProvider>(context, listen: false).setUser(user);
+        userProvider.setUser(user);
       }
       return result['success'] as bool;
     } catch (e) {

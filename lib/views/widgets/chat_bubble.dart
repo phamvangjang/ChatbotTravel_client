@@ -1,7 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
-class ChatBubble extends StatefulWidget{
+class ChatBubble extends StatefulWidget {
   final String message;
   final bool isUser;
   final bool showActions;
@@ -10,20 +10,20 @@ class ChatBubble extends StatefulWidget{
   final String messageType;
 
   const ChatBubble({
-    Key? key,
+    super.key,
     required this.message,
     required this.isUser,
     this.showActions = false,
     this.extraAction,
     this.voiceUrl,
     this.messageType = 'text',
-  }) : super(key: key);
+  });
 
   @override
   State<ChatBubble> createState() => _ChatBubbleState();
 }
 
-class _ChatBubbleState extends State<ChatBubble>{
+class _ChatBubbleState extends State<ChatBubble> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
@@ -73,14 +73,15 @@ class _ChatBubbleState extends State<ChatBubble>{
         await _audioPlayer.play(UrlSource(widget.voiceUrl!));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi phát âm thanh: $e')),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi phát âm thanh: $e')));
     }
   }
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Container(
       margin: EdgeInsets.only(
         bottom: 8,
@@ -88,23 +89,23 @@ class _ChatBubbleState extends State<ChatBubble>{
         right: widget.isUser ? 0 : 50,
       ),
       child: Column(
-        crossAxisAlignment: widget.isUser
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
+        crossAxisAlignment:
+            widget.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: widget.isUser
-                  ? Colors.blue.shade600
-                  : Colors.grey.shade200,
+              color:
+                  widget.isUser ? Colors.blue.shade600 : Colors.grey.shade200,
               borderRadius: BorderRadius.circular(20).copyWith(
-                bottomRight: widget.isUser
-                    ? const Radius.circular(4)
-                    : const Radius.circular(20),
-                bottomLeft: widget.isUser
-                    ? const Radius.circular(20)
-                    : const Radius.circular(4),
+                bottomRight:
+                    widget.isUser
+                        ? const Radius.circular(4)
+                        : const Radius.circular(20),
+                bottomLeft:
+                    widget.isUser
+                        ? const Radius.circular(20)
+                        : const Radius.circular(4),
               ),
             ),
             child: Column(
@@ -145,7 +146,11 @@ class _ChatBubbleState extends State<ChatBubble>{
 
                   // Nút like/dislike
                   IconButton(
-                    icon: const Icon(Icons.thumb_up_outlined, size: 16, color: Colors.grey),
+                    icon: const Icon(
+                      Icons.thumb_up_outlined,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
                     onPressed: () {
                       // Implement like functionality
                     },
@@ -153,8 +158,7 @@ class _ChatBubbleState extends State<ChatBubble>{
                   ),
 
                   // Extra action nếu có
-                  if (widget.extraAction != null)
-                    widget.extraAction!,
+                  if (widget.extraAction != null) widget.extraAction!,
                 ],
               ),
             ),
@@ -176,9 +180,10 @@ class _ChatBubbleState extends State<ChatBubble>{
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: widget.isUser
-                    ? Colors.white.withOpacity(0.2)
-                    : Colors.blue.shade100,
+                color:
+                    widget.isUser
+                        ? Colors.white.withOpacity(0.2)
+                        : Colors.blue.shade100,
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -198,12 +203,14 @@ class _ChatBubbleState extends State<ChatBubble>{
               children: [
                 // Progress bar
                 LinearProgressIndicator(
-                  value: _duration.inMilliseconds > 0
-                      ? _position.inMilliseconds / _duration.inMilliseconds
-                      : 0.0,
-                  backgroundColor: widget.isUser
-                      ? Colors.white.withOpacity(0.3)
-                      : Colors.grey.shade300,
+                  value:
+                      _duration.inMilliseconds > 0
+                          ? _position.inMilliseconds / _duration.inMilliseconds
+                          : 0.0,
+                  backgroundColor:
+                      widget.isUser
+                          ? Colors.white.withOpacity(0.3)
+                          : Colors.grey.shade300,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     widget.isUser ? Colors.white : Colors.blue.shade600,
                   ),
@@ -216,9 +223,10 @@ class _ChatBubbleState extends State<ChatBubble>{
                   '${_formatDuration(_position)} / ${_formatDuration(_duration)}',
                   style: TextStyle(
                     fontSize: 12,
-                    color: widget.isUser
-                        ? Colors.white.withOpacity(0.8)
-                        : Colors.grey.shade600,
+                    color:
+                        widget.isUser
+                            ? Colors.white.withOpacity(0.8)
+                            : Colors.grey.shade600,
                   ),
                 ),
               ],

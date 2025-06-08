@@ -21,6 +21,7 @@ class MainViewModel extends ChangeNotifier {
   bool _isRecording = false;
   String? _error;
   String _sourceLanguage = 'vi';
+  int? _lastInitializedUserId;
 
   // Getters
   List<Message> get messages => _messages;
@@ -30,7 +31,7 @@ class MainViewModel extends ChangeNotifier {
   bool get isSending => _isSending;
   //bool get isRecording => _isRecording;
   bool get isRecording {
-    print("Getter isRecording: $_isRecording");
+    // print("Getter isRecording: $_isRecording");
     return _isRecording;
   }
   String? get error => _error;
@@ -43,6 +44,14 @@ class MainViewModel extends ChangeNotifier {
 
   // Khởi tạo ViewModel
   Future<void> initialize() async {
+    // Kiểm tra xem có phải user mới hay không
+    bool isNewUser = _lastInitializedUserId != _currentUserId;
+
+    if (isNewUser) {
+      // Reset tất cả dữ liệu khi user mới đăng nhập
+      _resetUserData();
+      _lastInitializedUserId = _currentUserId;
+    }
     await loadUserConversations();
 
     // Nếu có cuộc trò chuyện gần nhất, tải nó
@@ -53,6 +62,24 @@ class MainViewModel extends ChangeNotifier {
       // Nếu không có cuộc trò chuyện nào, tạo mới
       await createNewConversation();
     }
+  }
+
+  void _resetUserData() {
+    _messages.clear();
+    _conversations.clear();
+    _currentConversation = null;
+    _error = null;
+    _isLoading = false;
+    _isSending = false;
+    _isRecording = false;
+
+    // Dừng mọi hoạt động ghi âm nếu đang thực hiện
+    if (_isRecording) {
+      _voiceService.cancelRecording();
+      _isRecording = false;
+    }
+
+    notifyListeners();
   }
 
   // Tải danh sách cuộc trò chuyện của user
@@ -76,8 +103,6 @@ class MainViewModel extends ChangeNotifier {
   Future<void> loadConversation(int conversationId) async {
     _setLoading(true);
     clearError();
-    print("conversationId");
-    print(conversationId);
     try {
       // Tìm cuộc trò chuyện trong danh sách
       _currentConversation = _conversations.firstWhere(
@@ -296,9 +321,25 @@ class MainViewModel extends ChangeNotifier {
 
   // Setter cho user ID (khi user đăng nhập)
   void setCurrentUser(int userId, String language) {
-    // _currentUserId = userId;
+    bool isUserChanged = _currentUserId != userId;
+
+    //_currentUserId = userId;
     _sourceLanguage = language;
-    initialize(); // Tải lại dữ liệu cho user mới
+
+    if (isUserChanged) {
+      // Reset dữ liệu khi user thay đổi
+      _resetUserData();
+      _lastInitializedUserId = null; // Reset để force initialize lại
+    }
+
+    initialize(); // Tải lại dữ liệu cho user mới// Tải lại dữ liệu cho user mới
+  }
+
+  // Phương thức logout để reset toàn bộ dữ liệu
+  void logout() {
+    _resetUserData();
+    _lastInitializedUserId = null;
+    //_currentUserId = 0; // hoặc giá trị mặc định
   }
 
   void sendAudioMessage() async {
@@ -311,5 +352,4 @@ class MainViewModel extends ChangeNotifier {
     _voiceService.dispose();
     super.dispose();
   }
-
 }

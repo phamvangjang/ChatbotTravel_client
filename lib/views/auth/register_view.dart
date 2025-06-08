@@ -132,7 +132,7 @@ class _RegisterViewState extends State<RegisterView> {
                               ? const CircularProgressIndicator(
                             color: Colors.white,
                           )
-                              : const Text('Sign Up'),
+                              : const Text('Đăng ký'),
                         ),
                       ),
 

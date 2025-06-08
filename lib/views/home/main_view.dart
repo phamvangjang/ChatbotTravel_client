@@ -8,7 +8,7 @@ import '../../models/message_model.dart';
 import '../widgets/chat_bubble.dart';
 
 class MainView extends StatefulWidget {
-  const MainView({Key? key}) : super(key: key);
+  const MainView({super.key});
 
   @override
   State<MainView> createState() => _MainViewState();
@@ -212,47 +212,45 @@ class _MainViewState extends State<MainView> {
   void _showEmptyConversationWarning(BuildContext context) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        icon: Icon(
-          Icons.info_outline,
-          color: Colors.orange.shade600,
-          size: 48,
-        ),
-        title: const Text(
-          'Cuộc trò chuyện trống',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Cuộc trò chuyện hiện tại chưa có tin nhắn nào.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
+      builder:
+          (dialogContext) => AlertDialog(
+            icon: Icon(
+              Icons.info_outline,
+              color: Colors.orange.shade600,
+              size: 48,
             ),
-            SizedBox(height: 8),
-            Text(
-              'Hãy gửi ít nhất một tin nhắn trước khi tạo cuộc trò chuyện mới.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+            title: const Text(
+              'Cuộc trò chuyện trống',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Cuộc trò chuyện hiện tại chưa có tin nhắn nào.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Hãy gửi ít nhất một tin nhắn trước khi tạo cuộc trò chuyện mới.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext); // Đóng dialog
+                },
+                child: const Text('Đã hiểu'),
               ),
+            ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext); // Đóng dialog
-            },
-            child: const Text('Đã hiểu'),
           ),
-        ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
     );
   }
 
@@ -615,5 +613,4 @@ class _MainViewState extends State<MainView> {
       },
     );
   }
-
 }

@@ -10,7 +10,7 @@ class RegisterViewModel extends ChangeNotifier {
   bool _obscurePassword = true;
   bool _isLoading = false;
   String? _errorMessage;
-  bool _isLoggedIn = false;
+  final bool _isLoggedIn = false;
 
   bool get isLoggedIn => _isLoggedIn;
 

@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:timeline_tile/timeline_tile.dart';
-
+import '../../models/attraction_model.dart';
 import '../../models/itinerary_item.dart';
-import '../../models/tourist_attraction_model.dart';
 import '../../viewmodels/home/map_viewmodel.dart';
 
 class MapView extends StatelessWidget {
@@ -14,10 +11,10 @@ class MapView extends StatelessWidget {
   final int conversationId;
 
   const MapView({
-    Key? key,
+    super.key,
     required this.messageContent,
     required this.conversationId,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +41,8 @@ class _MapViewContent extends StatefulWidget {
   State<_MapViewContent> createState() => _MapViewContentState();
 }
 
-class _MapViewContentState extends State<_MapViewContent> with TickerProviderStateMixin{
+class _MapViewContentState extends State<_MapViewContent>
+    with TickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -52,7 +50,6 @@ class _MapViewContentState extends State<_MapViewContent> with TickerProviderSta
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
 
-    // Khởi tạo ViewModel với dữ liệu từ tin nhắn
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<MapViewModel>(context, listen: false);
       viewModel.initialize(widget.messageContent, widget.conversationId);
@@ -89,17 +86,13 @@ class _MapViewContentState extends State<_MapViewContent> with TickerProviderSta
               IconButton(
                 icon: const Icon(Icons.my_location),
                 onPressed: () {
-                  if (viewModel.currentPosition != null && viewModel.mapController != null) {
-                    viewModel.mapController!.animateCamera(
-                      CameraUpdate.newLatLngZoom(
-                        LatLng(
-                          viewModel.currentPosition!.latitude,
-                          viewModel.currentPosition!.longitude,
-                        ),
-                        15.0,
-                      ),
-                    );
-                  }
+                  viewModel.getCurrentLocation();
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () {
+                  _showSearchDialog(context, viewModel);
                 },
               ),
               IconButton(
@@ -114,18 +107,56 @@ class _MapViewContentState extends State<_MapViewContent> with TickerProviderSta
               ),
             ],
           ),
-          body: viewModel.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : TabBarView(
-            controller: _tabController,
-            children: [
-              _MapTab(viewModel: viewModel),
-              _CalendarTab(viewModel: viewModel),
-              _TimelineTab(viewModel: viewModel),
-            ],
-          ),
+          body:
+              viewModel.isLoading
+                  ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Đang tải bản đồ...'),
+                      ],
+                    ),
+                  )
+                  : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _MapTab(viewModel: viewModel),
+                      _CalendarTab(viewModel: viewModel),
+                      _TimelineTab(viewModel: viewModel),
+                    ],
+                  ),
         );
       },
+    );
+  }
+
+  void _showSearchDialog(BuildContext context, MapViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Tìm kiếm địa điểm'),
+            content: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Nhập tên địa điểm...',
+                prefixIcon: Icon(Icons.search),
+              ),
+              onSubmitted: (query) {
+                if (query.isNotEmpty) {
+                  viewModel.searchAttractions(query);
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Hủy'),
+              ),
+            ],
+          ),
     );
   }
 }
@@ -141,27 +172,28 @@ class _MapTab extends StatelessWidget {
     return Column(
       children: [
         // Thông tin tin nhắn
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          color: Colors.blue.shade50,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Thông tin từ AI:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                viewModel.messageContent,
-                style: const TextStyle(fontSize: 12),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+        if (viewModel.messageContent.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            color: Colors.blue.shade50,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Thông tin từ AI:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  viewModel.messageContent,
+                  style: const TextStyle(fontSize: 12),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-        ),
 
         // Địa điểm được phát hiện
         if (viewModel.detectedAttractions.isNotEmpty)
@@ -172,9 +204,12 @@ class _MapTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Địa điểm được phát hiện:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                Text(
+                  'Địa điểm được phát hiện (${viewModel.detectedAttractions.length}):',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
@@ -184,7 +219,8 @@ class _MapTab extends StatelessWidget {
                     itemCount: viewModel.detectedAttractions.length,
                     itemBuilder: (context, index) {
                       final attraction = viewModel.detectedAttractions[index];
-                      final isSelected = viewModel.selectedAttraction?.id == attraction.id;
+                      final isSelected =
+                          viewModel.selectedAttraction?.id == attraction.id;
 
                       return Container(
                         margin: const EdgeInsets.only(right: 8),
@@ -195,12 +231,14 @@ class _MapTab extends StatelessWidget {
                               attraction.name,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: isSelected ? Colors.white : Colors.black87,
+                                color:
+                                    isSelected ? Colors.white : Colors.black87,
                               ),
                             ),
-                            backgroundColor: isSelected
-                                ? Colors.green.shade600
-                                : Colors.green.shade100,
+                            backgroundColor:
+                                isSelected
+                                    ? Colors.green.shade600
+                                    : Colors.green.shade100,
                           ),
                         ),
                       );
@@ -211,20 +249,26 @@ class _MapTab extends StatelessWidget {
             ),
           ),
 
-        // Bản đồ Google Maps
+        // Bản đồ Mapbox
         Expanded(
-          child: GoogleMap(
-            onMapCreated: viewModel.onMapCreated,
-            initialCameraPosition: CameraPosition(
-              target: viewModel.initialPosition,
+          child: FlutterMap(
+            mapController: viewModel.mapController,
+            options: MapOptions(
+              center: viewModel.initialPosition,
               zoom: 12.0,
+              onMapReady: () {
+                viewModel.onMapCreated();
+              },
             ),
-            markers: viewModel.markers,
-            polylines: viewModel.polylines,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
+            children: [
+              TileLayer(
+                urlTemplate:
+                    'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token={accessToken}',
+                additionalOptions: {'accessToken': viewModel.mapboxAccessToken},
+              ),
+              PolylineLayer(polylines: viewModel.polylines),
+              MarkerLayer(markers: viewModel.markers),
+            ],
           ),
         ),
 
@@ -236,7 +280,7 @@ class _MapTab extends StatelessWidget {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: const Color.fromARGB(25, 0, 0, 0),
                   blurRadius: 4,
                   offset: const Offset(0, -2),
                 ),
@@ -244,7 +288,9 @@ class _MapTab extends StatelessWidget {
             ),
             child: _AttractionInfoCard(
               attraction: viewModel.selectedAttraction!,
-              onAddToItinerary: () => _showAddToItineraryDialog(context, viewModel),
+              onAddToItinerary:
+                  () => _showAddToItineraryDialog(context, viewModel),
+              onClose: () => viewModel.clearSelection(),
             ),
           ),
       ],
@@ -257,73 +303,80 @@ class _MapTab extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Thêm vào lịch trình'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.calendar_today),
-                  title: Text('Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: selectedDate,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (date != null) {
-                      setState(() {
-                        selectedDate = date;
-                      });
-                    }
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.access_time),
-                  title: Text('Giờ: ${selectedTime.format(context)}'),
-                  onTap: () async {
-                    final time = await showTimePicker(
-                      context: context,
-                      initialTime: selectedTime,
-                    );
-                    if (time != null) {
-                      setState(() {
-                        selectedTime = time;
-                      });
-                    }
-                  },
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Hủy'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  viewModel.addToItinerary(
-                    viewModel.selectedAttraction!,
-                    date: selectedDate,
-                    time: selectedTime,
-                  );
-                  Navigator.pop(dialogContext);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Đã thêm ${viewModel.selectedAttraction!.name} vào lịch trình'),
-                      backgroundColor: Colors.green,
+      builder:
+          (dialogContext) => StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: const Text('Thêm vào lịch trình'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.calendar_today),
+                      title: Text(
+                        'Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                      ),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365),
+                          ),
+                        );
+                        if (date != null) {
+                          setState(() {
+                            selectedDate = date;
+                          });
+                        }
+                      },
                     ),
-                  );
-                },
-                child: const Text('Thêm'),
-              ),
-            ],
-          );
-        },
-      ),
+                    ListTile(
+                      leading: const Icon(Icons.access_time),
+                      title: Text('Giờ: ${selectedTime.format(context)}'),
+                      onTap: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (time != null) {
+                          setState(() {
+                            selectedTime = time;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Hủy'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      viewModel.addToItinerary(
+                        viewModel.selectedAttraction!,
+                        date: selectedDate,
+                        time: selectedTime,
+                      );
+                      Navigator.pop(dialogContext);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Đã thêm ${viewModel.selectedAttraction!.name} vào lịch trình',
+                          ),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                    child: const Text('Thêm'),
+                  ),
+                ],
+              );
+            },
+          ),
     );
   }
 }
@@ -376,196 +429,244 @@ class _CalendarTab extends StatelessWidget {
 
         // Danh sách lịch trình trong ngày
         Expanded(
-          child: viewModel.todayItinerary.isEmpty
-              ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.event_note,
-                  size: 64,
-                  color: Colors.grey.shade400,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Chưa có lịch trình cho ngày này',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade600,
+          child:
+              viewModel.todayItinerary.isEmpty
+                  ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.event_note,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Chưa có lịch trình cho ngày này',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Thêm địa điểm từ tab Bản đồ',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                  : ReorderableListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: viewModel.todayItinerary.length,
+                    onReorder: viewModel.reorderItinerary,
+                    itemBuilder: (context, index) {
+                      final item = viewModel.todayItinerary[index];
+                      return _ItineraryItemCard(
+                        key: ValueKey(
+                          item.attraction.id + item.visitTime.toString(),
+                        ),
+                        item: item,
+                        index: index,
+                        onRemove: () => viewModel.removeFromItinerary(item),
+                        onEdit:
+                            () => _showEditItineraryDialog(
+                              context,
+                              viewModel,
+                              item,
+                            ),
+                      );
+                    },
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Thêm địa điểm từ tab Bản đồ',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
-          )
-              : ReorderableListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: viewModel.todayItinerary.length,
-            onReorder: viewModel.reorderItinerary,
-            itemBuilder: (context, index) {
-              final item = viewModel.todayItinerary[index];
-              return _ItineraryItemCard(
-                key: ValueKey(item.attraction.id),
-                item: item,
-                index: index,
-                onRemove: () => viewModel.removeFromItinerary(item),
-                onEdit: () => _showEditItineraryDialog(context, viewModel, item),
-              );
-            },
-          ),
         ),
       ],
     );
   }
 
-  void _showEditItineraryDialog(BuildContext context, MapViewModel viewModel, ItineraryItem item) {
+  void _showEditItineraryDialog(
+    BuildContext context,
+    MapViewModel viewModel,
+    ItineraryItem item,
+  ) {
     DateTime selectedDate = item.visitTime;
     TimeOfDay selectedTime = TimeOfDay.fromDateTime(item.visitTime);
     Duration selectedDuration = item.estimatedDuration;
     String notes = item.notes;
+    final notesController = TextEditingController(text: notes);
 
     showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text('Chỉnh sửa lịch trình'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.calendar_today),
-                    title: Text('Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (date != null) {
-                        setState(() {
-                          selectedDate = date;
-                        });
-                      }
-                    },
+      builder:
+          (dialogContext) => StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: const Text('Chỉnh sửa lịch trình'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.calendar_today),
+                        title: Text(
+                          'Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                        ),
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365),
+                            ),
+                          );
+                          if (date != null) {
+                            setState(() {
+                              selectedDate = date;
+                            });
+                          }
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.access_time),
+                        title: Text('Giờ: ${selectedTime.format(context)}'),
+                        onTap: () async {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: selectedTime,
+                          );
+                          if (time != null) {
+                            setState(() {
+                              selectedTime = time;
+                            });
+                          }
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.timer),
+                        title: Text(
+                          'Thời gian dự kiến: ${selectedDuration.inHours}h ${selectedDuration.inMinutes % 60}m',
+                        ),
+                        onTap: () {
+                          _showDurationPicker(context, selectedDuration, (
+                            duration,
+                          ) {
+                            setState(() {
+                              selectedDuration = duration;
+                            });
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: notesController,
+                        decoration: const InputDecoration(
+                          labelText: 'Ghi chú',
+                          hintText: 'Thêm ghi chú cho địa điểm này...',
+                          border: OutlineInputBorder(),
+                        ),
+                        maxLines: 3,
+                        onChanged: (value) => notes = value,
+                      ),
+                    ],
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.access_time),
-                    title: Text('Giờ: ${selectedTime.format(context)}'),
-                    onTap: () async {
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: selectedTime,
-                      );
-                      if (time != null) {
-                        setState(() {
-                          selectedTime = time;
-                        });
-                      }
-                    },
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Hủy'),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.timer),
-                    title: Text('Thời gian dự kiến: ${selectedDuration.inHours}h ${selectedDuration.inMinutes % 60}m'),
-                    onTap: () {
-                      // Show duration picker
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Chọn thời gian'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ListTile(
-                                title: const Text('1 giờ'),
-                                onTap: () {
-                                  setState(() {
-                                    selectedDuration = const Duration(hours: 1);
-                                  });
-                                  Navigator.pop(context);
-                                },
-                              ),
-                              ListTile(
-                                title: const Text('2 giờ'),
-                                onTap: () {
-                                  setState(() {
-                                    selectedDuration = const Duration(hours: 2);
-                                  });
-                                  Navigator.pop(context);
-                                },
-                              ),
-                              ListTile(
-                                title: const Text('3 giờ'),
-                                onTap: () {
-                                  setState(() {
-                                    selectedDuration = const Duration(hours: 3);
-                                  });
-                                  Navigator.pop(context);
-                                },
-                              ),
-                              ListTile(
-                                title: const Text('Cả ngày'),
-                                onTap: () {
-                                  setState(() {
-                                    selectedDuration = const Duration(hours: 8);
-                                  });
-                                  Navigator.pop(context);
-                                },
-                              ),
-                            ],
-                          ),
+                  ElevatedButton(
+                    onPressed: () {
+                      final newItem = item.copyWith(
+                        visitTime: DateTime(
+                          selectedDate.year,
+                          selectedDate.month,
+                          selectedDate.day,
+                          selectedTime.hour,
+                          selectedTime.minute,
+                        ),
+                        estimatedDuration: selectedDuration,
+                        notes: notes,
+                      );
+                      viewModel.updateItineraryItem(item, newItem);
+                      Navigator.pop(dialogContext);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Đã cập nhật lịch trình'),
+                          backgroundColor: Colors.green,
                         ),
                       );
                     },
-                  ),
-                  TextField(
-                    decoration: const InputDecoration(
-                      labelText: 'Ghi chú',
-                      hintText: 'Thêm ghi chú cho địa điểm này...',
-                    ),
-                    maxLines: 3,
-                    onChanged: (value) => notes = value,
-                    controller: TextEditingController(text: notes),
+                    child: const Text('Lưu'),
                   ),
                 ],
-              ),
+              );
+            },
+          ),
+    );
+  }
+
+  void _showDurationPicker(
+    BuildContext context,
+    Duration currentDuration,
+    Function(Duration) onDurationSelected,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Chọn thời gian'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: const Text('30 phút'),
+                  onTap: () {
+                    onDurationSelected(const Duration(minutes: 30));
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: const Text('1 giờ'),
+                  onTap: () {
+                    onDurationSelected(const Duration(hours: 1));
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: const Text('2 giờ'),
+                  onTap: () {
+                    onDurationSelected(const Duration(hours: 2));
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: const Text('3 giờ'),
+                  onTap: () {
+                    onDurationSelected(const Duration(hours: 3));
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: const Text('Nửa ngày (4 giờ)'),
+                  onTap: () {
+                    onDurationSelected(const Duration(hours: 4));
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: const Text('Cả ngày (8 giờ)'),
+                  onTap: () {
+                    onDurationSelected(const Duration(hours: 8));
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Hủy'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final newItem = item.copyWith(
-                    visitTime: DateTime(
-                      selectedDate.year,
-                      selectedDate.month,
-                      selectedDate.day,
-                      selectedTime.hour,
-                      selectedTime.minute,
-                    ),
-                    estimatedDuration: selectedDuration,
-                    notes: notes,
-                  );
-                  viewModel.updateItineraryItem(item, newItem);
-                  Navigator.pop(dialogContext);
-                },
-                child: const Text('Lưu'),
-              ),
-            ],
-          );
-        },
-      ),
+          ),
     );
   }
 }
@@ -589,7 +690,10 @@ class _TimelineTab extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Lịch trình ngày ${viewModel.selectedDate.day}/${viewModel.selectedDate.month}/${viewModel.selectedDate.year}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const Spacer(),
               IconButton(
@@ -614,93 +718,172 @@ class _TimelineTab extends StatelessWidget {
 
         // Timeline
         Expanded(
-          child: viewModel.todayItinerary.isEmpty
-              ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.timeline,
-                  size: 64,
-                  color: Colors.grey.shade400,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Chưa có lịch trình cho ngày này',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
-          )
-              : ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: viewModel.todayItinerary.length,
-            itemBuilder: (context, index) {
-              final item = viewModel.todayItinerary[index];
-              final isFirst = index == 0;
-              final isLast = index == viewModel.todayItinerary.length - 1;
+          child:
+              viewModel.todayItinerary.isEmpty
+                  ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.timeline,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Chưa có lịch trình cho ngày này',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                  : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: viewModel.todayItinerary.length,
+                    itemBuilder: (context, index) {
+                      final item = viewModel.todayItinerary[index];
+                      final isLast =
+                          index == viewModel.todayItinerary.length - 1;
 
-              return TimelineTile(
-                alignment: TimelineAlign.manual,
-                lineXY: 0.2,
-                isFirst: isFirst,
-                isLast: isLast,
-                indicatorStyle: IndicatorStyle(
-                  width: 30,
-                  height: 30,
-                  indicator: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade600,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.location_on,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Timeline column
+                          SizedBox(
+                            width: 80,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  TimeOfDay.fromDateTime(
+                                    item.visitTime,
+                                  ).format(context),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${item.estimatedDuration.inHours}h ${item.estimatedDuration.inMinutes % 60}m',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Timeline line
+                          Column(
+                            children: [
+                              Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade600,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.location_on,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                              if (!isLast)
+                                Container(
+                                  width: 2,
+                                  height: 80,
+                                  color: Colors.blue.shade300,
+                                ),
+                            ],
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          // Content
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Card(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.attraction.name,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          item.attraction.address,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (item.notes.isNotEmpty) ...[
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            item.notes,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade700,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ],
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.star,
+                                              color: Colors.amber,
+                                              size: 16,
+                                            ),
+                                            Text(
+                                              ' ${item.attraction.rating}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            if (item.attraction.price != null)
+                                              Text(
+                                                '${item.attraction.price!.toInt()}đ',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.green.shade600,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                ),
-                beforeLineStyle: LineStyle(
-                  color: Colors.blue.shade300,
-                  thickness: 2,
-                ),
-                afterLineStyle: LineStyle(
-                  color: Colors.blue.shade300,
-                  thickness: 2,
-                ),
-                endChild: _TimelineItemCard(item: item),
-                startChild: Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        TimeOfDay.fromDateTime(item.visitTime).format(context),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade600,
-                        ),
-                      ),
-                      Text(
-                        '${item.estimatedDuration.inHours}h ${item.estimatedDuration.inMinutes % 60}m',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
         ),
 
         // Action buttons
@@ -718,19 +901,25 @@ class _TimelineTab extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: viewModel.todayItinerary.isEmpty
-                      ? null
-                      : () async {
-                    final success = await viewModel.saveItinerary();
-                    if (success) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Lịch trình đã được lưu'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  },
+                  onPressed:
+                      viewModel.todayItinerary.isEmpty
+                          ? null
+                          : () async {
+                            final success = await viewModel.saveItinerary();
+                            if (!context.mounted) return;
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  success
+                                      ? 'Lịch trình đã được lưu'
+                                      : 'Lỗi khi lưu lịch trình',
+                                ),
+                                backgroundColor:
+                                    success ? Colors.green : Colors.red,
+                              ),
+                            );
+                          },
                   icon: const Icon(Icons.save),
                   label: const Text('Lưu lịch trình'),
                   style: ElevatedButton.styleFrom(
@@ -749,12 +938,14 @@ class _TimelineTab extends StatelessWidget {
 
 // Widget hiển thị thông tin địa điểm
 class _AttractionInfoCard extends StatelessWidget {
-  final TouristAttraction attraction;
+  final Attraction attraction;
   final VoidCallback onAddToItinerary;
+  final VoidCallback onClose;
 
   const _AttractionInfoCard({
     required this.attraction,
     required this.onAddToItinerary,
+    required this.onClose,
   });
 
   @override
@@ -794,10 +985,7 @@ class _AttractionInfoCard extends StatelessWidget {
               ),
               Text(
                 attraction.address,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -808,19 +996,38 @@ class _AttractionInfoCard extends StatelessWidget {
                     ' ${attraction.rating}',
                     style: const TextStyle(fontSize: 12),
                   ),
+                  if (attraction.price != null) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      '${attraction.price!.toInt()}đ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green.shade600,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
           ),
         ),
-        ElevatedButton(
-          onPressed: onAddToItinerary,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue.shade600,
-            foregroundColor: Colors.white,
-            minimumSize: const Size(80, 36),
-          ),
-          child: const Text('Thêm', style: TextStyle(fontSize: 12)),
+        Column(
+          children: [
+            ElevatedButton(
+              onPressed: onAddToItinerary,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(80, 36),
+              ),
+              child: const Text('Thêm', style: TextStyle(fontSize: 12)),
+            ),
+            IconButton(
+              onPressed: onClose,
+              icon: const Icon(Icons.close, size: 20),
+            ),
+          ],
         ),
       ],
     );
@@ -835,12 +1042,12 @@ class _ItineraryItemCard extends StatelessWidget {
   final VoidCallback onEdit;
 
   const _ItineraryItemCard({
-    Key? key,
+    super.key,
     required this.item,
     required this.index,
     required this.onRemove,
     required this.onEdit,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -851,7 +1058,10 @@ class _ItineraryItemCard extends StatelessWidget {
           backgroundColor: Colors.blue.shade600,
           child: Text(
             '${index + 1}',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         title: Text(item.attraction.name),
@@ -883,65 +1093,6 @@ class _ItineraryItemCard extends StatelessWidget {
               icon: const Icon(Icons.delete, size: 20, color: Colors.red),
             ),
             const Icon(Icons.drag_handle),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Widget item trong timeline
-class _TimelineItemCard extends StatelessWidget {
-  final ItineraryItem item;
-
-  const _TimelineItemCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(left: 16, bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              TimeOfDay.fromDateTime(item.visitTime).format(context),
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue.shade600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item.attraction.name,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              'Dự kiến: ${item.estimatedDuration.inHours}h ${item.estimatedDuration.inMinutes % 60}m',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
-            ),
-            if (item.notes.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                item.notes,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade700,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
           ],
         ),
       ),

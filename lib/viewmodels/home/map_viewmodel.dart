@@ -1,426 +1,226 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:mobilev2/services/home/tourist_attraction_service.dart';
+import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 
+import '../../models/attraction_model.dart';
 import '../../models/itinerary_item.dart';
-import '../../models/tourist_attraction_model.dart';
+import '../../services/home/attraction_service.dart';
+import '../../services/home/location_service.dart';
 
 class MapViewModel extends ChangeNotifier {
-  final TouristAttractionService _touristAttractionService =
-      TouristAttractionService();
-  final PolylinePoints _polylinePoints = PolylinePoints();
+  // Services
+  final LocationService _locationService = LocationService();
+  final AttractionService _attractionService = AttractionService();
 
-  // State variables
-  List<TouristAttraction> _allAttractions = [];
-  List<TouristAttraction> _detectedAttractions = [];
-  String _messageContent = '';
-  int _conversationId = 0;
-  bool _isLoading = false;
-  String? _error;
-  TouristAttraction? _selectedAttraction;
+  // Mapbox access token - THAY ĐỔI TOKEN NÀY
+  final String mapboxAccessToken = dotenv.env["MAPBOX_ACCESS_TOKEN"]!;
 
-  // Map related
-  GoogleMapController? _mapController;
-  Position? _currentPosition;
-  Set<Marker> _markers = {};
-  Set<Polyline> _polylines = {};
-  LatLng _initialPosition = const LatLng(
-    10.762622,
-    106.660172,
-  ); // TP.HCM center
+  // Mapbox style URL
+  final String mapboxStyleUrl = 'mapbox://styles/mapbox/streets-v12';
 
-  // Itinerary related
-  List<ItineraryItem> _itinerary = [];
-  DateTime _selectedDate = DateTime.now();
-  Map<DateTime, List<ItineraryItem>> _dailyItineraries = {};
+  // Mapbox directions API URL
+  final String directionsApiUrl =
+      'https://api.mapbox.com/directions/v5/mapbox/walking';
 
-  // Getters
-  List<TouristAttraction> get allAttractions => _allAttractions;
-
-  List<TouristAttraction> get detectedAttractions => _detectedAttractions;
-
-  String get messageContent => _messageContent;
-
-  int get conversationId => _conversationId;
+  // Trạng thái
+  bool _isLoading = true;
 
   bool get isLoading => _isLoading;
 
-  String? get error => _error;
-
-  TouristAttraction? get selectedAttraction => _selectedAttraction;
-
-  // Map getters
-  GoogleMapController? get mapController => _mapController;
+  // Vị trí hiện tại
+  Position? _currentPosition;
 
   Position? get currentPosition => _currentPosition;
 
-  Set<Marker> get markers => _markers;
-
-  Set<Polyline> get polylines => _polylines;
+  // Vị trí ban đầu (mặc định: Hồ Chí Minh)
+  LatLng _initialPosition = LatLng(10.7769, 106.7009);
 
   LatLng get initialPosition => _initialPosition;
 
-  // Itinerary getters
-  List<ItineraryItem> get itinerary => _itinerary;
+  // Nội dung tin nhắn
+  String _messageContent = '';
 
-  DateTime get selectedDate => _selectedDate;
+  String get messageContent => _messageContent;
+
+  // ID cuộc trò chuyện
+  int _conversationId = 0;
+
+  int get conversationId => _conversationId;
+
+  // Danh sách địa điểm du lịch
+  List<Attraction> _detectedAttractions = [];
+
+  List<Attraction> get detectedAttractions => _detectedAttractions;
+
+  // Địa điểm được chọn
+  Attraction? _selectedAttraction;
+
+  Attraction? get selectedAttraction => _selectedAttraction;
+
+  // Markers trên bản đồ
+  List<Marker> _markers = [];
+
+  List<Marker> get markers => _markers;
+
+  // Polylines trên bản đồ
+  List<Polyline> _polylines = [];
+
+  List<Polyline> get polylines => _polylines;
+
+  // Lịch trình theo ngày
+  final Map<DateTime, List<ItineraryItem>> _dailyItineraries = {};
 
   Map<DateTime, List<ItineraryItem>> get dailyItineraries => _dailyItineraries;
 
-  List<ItineraryItem> get todayItinerary =>
-      _dailyItineraries[_getDateKey(_selectedDate)] ?? [];
+  // Ngày được chọn
+  DateTime _selectedDate = DateTime.now();
 
-  // Khởi tạo ViewModel
-  void initialize(String messageContent, int conversationId) {
+  DateTime get selectedDate => _selectedDate;
+
+  // Lịch trình của ngày được chọn
+  List<ItineraryItem> get todayItinerary {
+    final dateKey = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+    return _dailyItineraries[dateKey] ?? [];
+  }
+
+  // Controller cho MapboxMap
+  MapController? _mapController;
+
+  MapController? get mapController => _mapController;
+
+  // Khởi tạo
+  Future<void> initialize(String messageContent, int conversationId) async {
     _messageContent = messageContent;
     _conversationId = conversationId;
-    _loadAttractions();
-    _extractLocationsFromMessage();
-    _getCurrentLocation();
-  }
-
-  // Tải danh sách địa điểm du lịch
-  void _loadAttractions() {
-    _setLoading(true);
-
-    try {
-      _allAttractions = _touristAttractionService.getHcmcAttractions();
-      _updateMarkers();
-      notifyListeners();
-    } catch (e) {
-      _setError('Không thể tải danh sách địa điểm: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Trích xuất địa điểm từ nội dung tin nhắn
-  void _extractLocationsFromMessage() {
-    _setLoading(true);
-
-    try {
-      final detectedAttractions = <TouristAttraction>[];
-      final content = _messageContent.toLowerCase();
-
-      for (final attraction in _allAttractions) {
-        if (attraction.matchesKeyword(content)) {
-          detectedAttractions.add(attraction);
-        }
-      }
-
-      _detectedAttractions = detectedAttractions;
-
-      if (_detectedAttractions.isNotEmpty) {
-        _selectedAttraction = _detectedAttractions.first;
-      }
-
-      notifyListeners();
-    } catch (e) {
-      _setError('Lỗi khi phân tích tin nhắn: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Map controller methods
-  void onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
+    _isLoading = true;
     notifyListeners();
-  }
 
-  // Chọn một địa điểm
-  void selectAttraction(TouristAttraction attraction) {
-    _selectedAttraction = attraction;
+    // Tạo MapController
+    _mapController = MapController();
 
-    // Di chuyển camera đến địa điểm được chọn
-    if (_mapController != null) {
-      _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(attraction.latitude, attraction.longitude),
-          15.0,
-        ),
-      );
-    }
+    // Lấy vị trí hiện tại
+    await _getCurrentLocation();
 
+    // Phát hiện địa điểm từ nội dung tin nhắn
+    await _detectAttractionsFromMessage();
+
+    _isLoading = false;
     notifyListeners();
-  }
-
-  // Itinerary methods
-  void selectDate(DateTime date) {
-    _selectedDate = date;
-    _drawRoute();
-    notifyListeners();
-  }
-
-  // Thêm địa điểm vào lịch trình
-  void addToItinerary(
-    TouristAttraction attraction, {
-    DateTime? date,
-    TimeOfDay? time,
-  }) {
-    final targetDate = date ?? _selectedDate;
-    final visitTime = DateTime(
-      targetDate.year,
-      targetDate.month,
-      targetDate.day,
-      time?.hour ?? 9,
-      time?.minute ?? 0,
-    );
-
-    final item = ItineraryItem(
-      attraction: attraction,
-      visitTime: visitTime,
-      estimatedDuration: const Duration(hours: 2), // Mặc định 2 tiếng
-    );
-
-    final dateKey = _getDateKey(targetDate);
-    if (!_dailyItineraries.containsKey(dateKey)) {
-      _dailyItineraries[dateKey] = [];
-    }
-
-    _dailyItineraries[dateKey]!.add(item);
-    _dailyItineraries[dateKey]!.sort(
-      (a, b) => a.visitTime.compareTo(b.visitTime),
-    );
-
-    _updateMarkers();
-    _drawRoute();
-    notifyListeners();
-  }
-
-  // Xóa địa điểm khỏi lịch trình
-  void removeFromItinerary(ItineraryItem item) {
-    final dateKey = _getDateKey(item.visitTime);
-    _dailyItineraries[dateKey]?.remove(item);
-
-    if (_dailyItineraries[dateKey]?.isEmpty == true) {
-      _dailyItineraries.remove(dateKey);
-    }
-
-    _updateMarkers();
-    _drawRoute();
-    notifyListeners();
-  }
-
-  void updateItineraryItem(ItineraryItem oldItem, ItineraryItem newItem) {
-    final oldDateKey = _getDateKey(oldItem.visitTime);
-    final newDateKey = _getDateKey(newItem.visitTime);
-
-    // Xóa item cũ
-    _dailyItineraries[oldDateKey]?.remove(oldItem);
-    if (_dailyItineraries[oldDateKey]?.isEmpty == true) {
-      _dailyItineraries.remove(oldDateKey);
-    }
-
-    // Thêm item mới
-    if (!_dailyItineraries.containsKey(newDateKey)) {
-      _dailyItineraries[newDateKey] = [];
-    }
-    _dailyItineraries[newDateKey]!.add(newItem);
-    _dailyItineraries[newDateKey]!.sort(
-      (a, b) => a.visitTime.compareTo(b.visitTime),
-    );
-
-    _drawRoute();
-    notifyListeners();
-  }
-
-  // Sắp xếp lại lịch trình
-  void reorderItinerary(int oldIndex, int newIndex) {
-    final items = todayItinerary;
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
-    final item = items.removeAt(oldIndex);
-    items.insert(newIndex, item);
-
-    // Cập nhật thời gian theo thứ tự mới
-    for (int i = 0; i < items.length; i++) {
-      final baseTime = DateTime(
-        _selectedDate.year,
-        _selectedDate.month,
-        _selectedDate.day,
-        9, // Bắt đầu từ 9h sáng
-      );
-      final newTime = baseTime.add(
-        Duration(hours: i * 3),
-      ); // Mỗi địa điểm cách nhau 3 tiếng
-
-      items[i] = items[i].copyWith(visitTime: newTime);
-    }
-
-    _drawRoute();
-    notifyListeners();
-  }
-
-  // Lưu lịch trình
-  Future<bool> saveItinerary() async {
-    _setLoading(true);
-
-    try {
-      await Future.delayed(const Duration(seconds: 1));
-      // Trong thực tế, lưu vào database hoặc cloud storage
-      return true;
-    } catch (e) {
-      _setError('Không thể lưu lịch trình: $e');
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Tìm kiếm địa điểm
-  void searchAttractions(String keyword) {
-    if (keyword.isEmpty) {
-      _detectedAttractions = [];
-      notifyListeners();
-      return;
-    }
-
-    _detectedAttractions = _touristAttractionService.searchAttractions(keyword);
-    notifyListeners();
-  }
-
-  // Helper methods
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  void _setError(String error) {
-    _error = error;
-    notifyListeners();
-  }
-
-  void clearError() {
-    _error = null;
-    notifyListeners();
-  }
-
-  // Vẽ tuyến đường giữa các địa điểm trong lịch trình
-  Future<void> _drawRoute() async {
-    if (todayItinerary.length < 2) {
-      _polylines.clear();
-      notifyListeners();
-      return;
-    }
-
-    _polylines.clear();
-
-    try {
-      for (int i = 0; i < todayItinerary.length - 1; i++) {
-        final start = todayItinerary[i].attraction;
-        final end = todayItinerary[i + 1].attraction;
-
-        final result = await _polylinePoints.getRouteBetweenCoordinates(
-          dotenv.env['GOOGLE_MAP_API_KEY_FLUTTER_APP']!,
-          PointLatLng(start.latitude, start.longitude),
-          PointLatLng(end.latitude, end.longitude),
-          travelMode: TravelMode.driving,
-        );
-
-        if (result.points.isNotEmpty) {
-          final polylineCoordinates =
-              result.points
-                  .map((point) => LatLng(point.latitude, point.longitude))
-                  .toList();
-
-          _polylines.add(
-            Polyline(
-              polylineId: PolylineId('route_$i'),
-              color: Colors.blue,
-              width: 5,
-              points: polylineCoordinates,
-            ),
-          );
-        }
-      }
-
-      notifyListeners();
-    } catch (e) {
-      _setError('Không thể vẽ tuyến đường: $e');
-    }
-  }
-
-  DateTime _getDateKey(DateTime selectedDate) {
-    return DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
   }
 
   // Lấy vị trí hiện tại
   Future<void> _getCurrentLocation() async {
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _setError('Dịch vụ vị trí chưa được bật');
-        return;
+      _currentPosition = await _locationService.getCurrentLocation();
+      if (_currentPosition != null) {
+        _initialPosition = LatLng(
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+        );
       }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          _setError('Quyền truy cập vị trí bị từ chối');
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        _setError('Quyền truy cập vị trí bị từ chối vĩnh viễn');
-        return;
-      }
-
-      _currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      _initialPosition = LatLng(
-        _currentPosition!.latitude,
-        _currentPosition!.longitude,
-      );
-      _updateMarkers();
-      notifyListeners();
     } catch (e) {
-      _setError('Không thể lấy vị trí hiện tại: $e');
+      print('Error getting location: $e');
     }
   }
 
-  void _updateMarkers() {
-    _markers.clear();
+  // Phát hiện địa điểm từ nội dung tin nhắn
+  Future<void> _detectAttractionsFromMessage() async {
+    try {
+      if (_messageContent.isNotEmpty) {
+        _detectedAttractions = await _attractionService
+            .detectAttractionsFromMessage(_messageContent);
+      } else {
+        // Nếu không có tin nhắn, lấy địa điểm gần đó
+        if (_currentPosition != null) {
+          LatLng currentLatLng = LatLng(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+          );
+          _detectedAttractions = await _attractionService.getNearbyAttractions(
+            currentLatLng,
+          );
+        } else {
+          // Lấy tất cả địa điểm
+          _detectedAttractions = await _attractionService.getAllAttractions();
+        }
+      }
 
-    // Thêm marker vị trí hiện tại
+      // Tạo markers cho các địa điểm
+      _updateMarkers();
+    } catch (e) {
+      print('Error detecting attractions: $e');
+      // Fallback: lấy tất cả địa điểm
+      _detectedAttractions = await _attractionService.getAllAttractions();
+      _updateMarkers();
+    }
+  }
+
+  // Cập nhật markers
+  void _updateMarkers() {
+    _markers = [];
+
+    // Thêm marker cho vị trí hiện tại
     if (_currentPosition != null) {
       _markers.add(
         Marker(
-          markerId: const MarkerId('current_location'),
-          position: LatLng(
+          point: LatLng(
             _currentPosition!.latitude,
             _currentPosition!.longitude,
           ),
-          infoWindow: const InfoWindow(title: 'Vị trí hiện tại'),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+          width: 40,
+          height: 40,
+          builder:
+              (context) => Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const Icon(
+                  Icons.my_location,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
         ),
       );
     }
 
-    // Thêm markers cho các địa điểm du lịch
-    for (final attraction in _allAttractions) {
+    // Thêm markers cho các địa điểm
+    for (var attraction in _detectedAttractions) {
+      final isSelected = _selectedAttraction?.id == attraction.id;
+
       _markers.add(
         Marker(
-          markerId: MarkerId(attraction.id),
-          position: LatLng(attraction.latitude, attraction.longitude),
-          infoWindow: InfoWindow(
-            title: attraction.name,
-            snippet: attraction.address,
-          ),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            _isInItinerary(attraction)
-                ? BitmapDescriptor.hueGreen
-                : BitmapDescriptor.hueRed,
-          ),
-          onTap: () => selectAttraction(attraction),
+          point: attraction.location,
+          width: 40,
+          height: 40,
+          builder:
+              (context) => GestureDetector(
+                onTap: () => selectAttraction(attraction),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.green : Colors.red,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Icon(
+                    Icons.location_on,
+                    color: Colors.white,
+                    size: isSelected ? 24 : 20,
+                  ),
+                ),
+              ),
         ),
       );
     }
@@ -428,10 +228,273 @@ class MapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Helper methods
-  bool _isInItinerary(TouristAttraction attraction) {
-    return _dailyItineraries.values.any(
-      (items) => items.any((item) => item.attraction.id == attraction.id),
+  // Chọn địa điểm
+  Future<void> selectAttraction(Attraction attraction) async {
+    _selectedAttraction = attraction;
+    _updateMarkers();
+
+    // Di chuyển bản đồ đến địa điểm được chọn
+    if (_mapController != null) {
+      _mapController!.move(attraction.location, 15.0);
+    }
+
+    // Vẽ đường đi từ vị trí hiện tại đến địa điểm được chọn
+    if (_currentPosition != null) {
+      await _getDirections(
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        attraction.location,
+      );
+    }
+
+    notifyListeners();
+  }
+
+  // Lấy chỉ đường từ Mapbox API
+  Future<void> _getDirections(LatLng start, LatLng end) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '$directionsApiUrl/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?geometries=geojson&access_token=$mapboxAccessToken',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['routes'] != null && data['routes'].isNotEmpty) {
+          final route = data['routes'][0];
+          final geometry = route['geometry'];
+
+          if (geometry != null && geometry['coordinates'] != null) {
+            final List<dynamic> coords = geometry['coordinates'];
+            final List<LatLng> points =
+                coords.map((coord) {
+                  return LatLng(coord[1], coord[0]);
+                }).toList();
+
+            _polylines = [
+              Polyline(points: points, color: Colors.blue, strokeWidth: 4.0),
+            ];
+
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      print('Error getting directions: $e');
+    }
+  }
+
+  // Khởi tạo MapController
+  void onMapCreated() {
+    _mapController ??= MapController();
+    notifyListeners();
+  }
+
+  // Chọn ngày
+  void selectDate(DateTime date) {
+    _selectedDate = date;
+    notifyListeners();
+  }
+
+  // Thêm vào lịch trình
+  void addToItinerary(
+    Attraction attraction, {
+    required DateTime date,
+    required TimeOfDay time,
+  }) {
+    final dateKey = DateTime(date.year, date.month, date.day);
+    final visitTime = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
     );
+
+    final item = ItineraryItem(attraction: attraction, visitTime: visitTime);
+
+    if (_dailyItineraries.containsKey(dateKey)) {
+      _dailyItineraries[dateKey]!.add(item);
+      // Sắp xếp theo thời gian
+      _dailyItineraries[dateKey]!.sort(
+        (a, b) => a.visitTime.compareTo(b.visitTime),
+      );
+    } else {
+      _dailyItineraries[dateKey] = [item];
+    }
+
+    notifyListeners();
+  }
+
+  // Xóa khỏi lịch trình
+  void removeFromItinerary(ItineraryItem item) {
+    final dateKey = DateTime(
+      item.visitTime.year,
+      item.visitTime.month,
+      item.visitTime.day,
+    );
+
+    if (_dailyItineraries.containsKey(dateKey)) {
+      _dailyItineraries[dateKey]!.remove(item);
+
+      if (_dailyItineraries[dateKey]!.isEmpty) {
+        _dailyItineraries.remove(dateKey);
+      }
+
+      notifyListeners();
+    }
+  }
+
+  // Cập nhật item trong lịch trình
+  void updateItineraryItem(ItineraryItem oldItem, ItineraryItem newItem) {
+    final oldDateKey = DateTime(
+      oldItem.visitTime.year,
+      oldItem.visitTime.month,
+      oldItem.visitTime.day,
+    );
+    final newDateKey = DateTime(
+      newItem.visitTime.year,
+      newItem.visitTime.month,
+      newItem.visitTime.day,
+    );
+
+    // Xóa item cũ
+    if (_dailyItineraries.containsKey(oldDateKey)) {
+      _dailyItineraries[oldDateKey]!.remove(oldItem);
+
+      if (_dailyItineraries[oldDateKey]!.isEmpty) {
+        _dailyItineraries.remove(oldDateKey);
+      }
+    }
+
+    // Thêm item mới
+    if (_dailyItineraries.containsKey(newDateKey)) {
+      _dailyItineraries[newDateKey]!.add(newItem);
+      _dailyItineraries[newDateKey]!.sort(
+        (a, b) => a.visitTime.compareTo(b.visitTime),
+      );
+    } else {
+      _dailyItineraries[newDateKey] = [newItem];
+    }
+
+    notifyListeners();
+  }
+
+  // Sắp xếp lại lịch trình
+  void reorderItinerary(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    final dateKey = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+
+    if (_dailyItineraries.containsKey(dateKey)) {
+      final item = _dailyItineraries[dateKey]!.removeAt(oldIndex);
+      _dailyItineraries[dateKey]!.insert(newIndex, item);
+
+      notifyListeners();
+    }
+  }
+
+  // Lưu lịch trình
+  Future<bool> saveItinerary() async {
+    try {
+      // TODO: Implement saving itinerary to backend
+      await Future.delayed(const Duration(seconds: 1));
+      return true;
+    } catch (e) {
+      print('Error saving itinerary: $e');
+      return false;
+    }
+  }
+
+  // Lấy vị trí hiện tại (public method)
+  Future<void> getCurrentLocation() async {
+    _isLoading = true;
+    notifyListeners();
+
+    await _getCurrentLocation();
+    _updateMarkers();
+
+    // Di chuyển bản đồ đến vị trí hiện tại
+    if (_currentPosition != null && _mapController != null) {
+      _mapController!.move(
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        15.0,
+      );
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // Tìm kiếm địa điểm
+  Future<void> searchAttractions(String query) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      LatLng? currentLocation;
+      if (_currentPosition != null) {
+        currentLocation = LatLng(
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+        );
+      }
+
+      _detectedAttractions = await _attractionService.searchAttractions(
+        query,
+        currentLocation: currentLocation,
+      );
+      _updateMarkers();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      print('Error searching attractions: $e');
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Lấy địa điểm theo danh mục
+  Future<void> getAttractionsByCategory(String category) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      LatLng? currentLocation;
+      if (_currentPosition != null) {
+        currentLocation = LatLng(
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+        );
+      }
+
+      _detectedAttractions = await _attractionService.getAttractionsByCategory(
+        category,
+        currentLocation: currentLocation,
+      );
+      _updateMarkers();
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      print('Error getting attractions by category: $e');
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Reset selection
+  void clearSelection() {
+    _selectedAttraction = null;
+    _polylines = [];
+    _updateMarkers();
   }
 }

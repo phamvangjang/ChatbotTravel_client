@@ -10,10 +10,10 @@ class ChatInput extends StatefulWidget {
   final bool isEnabled;
 
   const ChatInput({
-    Key? key,
+    super.key,
     required this.onSendMessage,
     this.isEnabled = true,
-  }) : super(key: key);
+  });
 
   @override
   State<ChatInput> createState() => _ChatInputState();

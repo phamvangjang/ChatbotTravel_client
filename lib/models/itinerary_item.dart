@@ -1,7 +1,7 @@
-import 'package:mobilev2/models/tourist_attraction_model.dart';
+import 'attraction_model.dart';
 
 class ItineraryItem {
-  final TouristAttraction attraction;
+  final Attraction attraction;
   final DateTime visitTime;
   final Duration estimatedDuration;
   final String notes;
@@ -9,16 +9,16 @@ class ItineraryItem {
   ItineraryItem({
     required this.attraction,
     required this.visitTime,
-    required this.estimatedDuration,
+    this.estimatedDuration = const Duration(hours: 2),
     this.notes = '',
   });
 
   ItineraryItem copyWith({
-    TouristAttraction? attraction,
+    Attraction? attraction,
     DateTime? visitTime,
     Duration? estimatedDuration,
     String? notes,
-}){
+  }) {
     return ItineraryItem(
       attraction: attraction ?? this.attraction,
       visitTime: visitTime ?? this.visitTime,
