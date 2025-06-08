@@ -107,11 +107,13 @@ class _RegisterViewState extends State<RegisterView> {
                               ? () async {
                             final success = await viewModel.register();
                             if (success && context.mounted) {
-                              // Navigate to home on success
                               Navigator.pushReplacementNamed(
                                 context,
                                 '/verify_otp',
-                                arguments: viewModel.emailController.text.trim(),
+                                arguments: {
+                                  'email': viewModel.emailController.text.trim(),
+                                  'otp_type': 'register',
+                                },
                               );
                             }
                           }

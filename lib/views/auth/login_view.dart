@@ -74,7 +74,8 @@ class _LoginViewState extends State<LoginView> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: TextButton(
-                          onPressed: () {},
+                          onPressed:
+                              () => viewModel.goToForgotPassword(context),
                           child: const Text('Quên mật khẩu?'),
                         ),
                       ),
@@ -100,7 +101,9 @@ class _LoginViewState extends State<LoginView> {
                           onPressed:
                               viewModel.canLogin && !viewModel.isLoading
                                   ? () async {
-                                    final success = await viewModel.login(context);
+                                    final success = await viewModel.login(
+                                      context,
+                                    );
                                     if (success && context.mounted) {
                                       // Navigate to home on success
                                       Navigator.pushReplacementNamed(

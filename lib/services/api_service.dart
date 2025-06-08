@@ -12,12 +12,9 @@ class ApiService {
 
   static String get forgotPasswordUrl => "$_baseUrl/auth/forgot-password";
 
-  static String get verifyResetOtpUrl => "$_baseUrl/auth/verify-reset-otp";
+  static String get verifyForgotPasswordOtpUrl => "$_baseUrl/auth/verify-reset-otp";
 
   static String get resetPasswordUrl => "$_baseUrl/auth/reset-password";
-
-  //chat
-  static String get chatbotUrl => "$_baseUrl/travel/chat";
 
   //done endpoint
   static String get createNewConversationUrl =>

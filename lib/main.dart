@@ -3,13 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:mobilev2/providers/user_provider.dart';
+import 'package:mobilev2/viewmodels/auth/forgot_password_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/login_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/register_viewmodel.dart';
+import 'package:mobilev2/viewmodels/auth/reset_password_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/verify_otp_viewmodel.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/viewmodels/home/setting_viewmodel.dart';
+import 'package:mobilev2/views/auth/forgot_password_view.dart';
 import 'package:mobilev2/views/auth/login_view.dart';
 import 'package:mobilev2/views/auth/register_view.dart';
+import 'package:mobilev2/views/auth/reset_password_view.dart';
 import 'package:mobilev2/views/auth/verify_otp_view.dart';
 import 'package:mobilev2/views/home/drawer_view.dart';
 import 'package:mobilev2/views/home/main_view.dart';
@@ -40,6 +44,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => VerifyOtpViewModel()),
         ChangeNotifierProvider(create: (_) => MainViewModel(user!.id)),
         ChangeNotifierProvider(create: (_) => SettingViewModel()),
+        ChangeNotifierProvider(create: (_) => ForgotPasswordViewModel()),
+        ChangeNotifierProvider(create: (_) => ResetPasswordViewModel()),
         // ChangeNotifierProvider(create: (_) => DrawerViewModel(user!.id)),
         ChangeNotifierProvider(create: (_) => UserProvider()..setUserIfAvailable(user)),
       ],
@@ -70,6 +76,8 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const MainView(),
         '/setting': (context) => const SettingView(),
         '/draw': (context) => const DrawerView(),
+        '/forgot_password': (context) => const ForgotPasswordView(),
+        '/reset_password': (context) => const ResetPasswordView(),
       },
     );
   }

@@ -22,7 +22,7 @@ class VerifyOtpViewModel extends ChangeNotifier {
     errorMessage = '';
     notifyListeners();
     try {
-      final result = await _authService.verifyOtp(
+      final result = await _authService.verifyRegisterOtp(
         emailController.text.trim(),
         otpCode,
       );

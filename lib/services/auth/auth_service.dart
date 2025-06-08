@@ -48,7 +48,7 @@ class AuthService {
     return prefs.getString('token');
   }
 
-  Future<Map<String, dynamic>> register(String email,String password,String username,) async {
+  Future<Map<String, dynamic>> register(String email, String password, String username) async {
     try {
       final response = await http.post(
         Uri.parse(ApiService.registerUrl),
@@ -77,12 +77,72 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>> verifyOtp(String email, String otp) async {
+  Future<Map<String, dynamic>> verifyRegisterOtp(String email, String otp) async {
     try {
       final response = await http.post(
         Uri.parse(ApiService.verifyOtpUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'otp_code': otp}),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        print("data: ${jsonEncode(data)}");
+        return {'success': true, 'message': data['message']};
+      } else {
+        print("data: ${jsonEncode(data)}");
+        return {'success': false, 'message': data['message']};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error occurred: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyForgotPasswordOtp(String email, String otp) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiService.verifyForgotPasswordOtpUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'otp_code': otp}),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        print("data: ${jsonEncode(data)}");
+        return {'success': true, 'message': data['message']};
+      } else {
+        print("data: ${jsonEncode(data)}");
+        return {'success': false, 'message': data['message']};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error occurred: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiService.forgotPasswordUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        print("data: ${jsonEncode(data)}");
+        return {'success': true, 'message': data['message']};
+      } else {
+        print("data: ${jsonEncode(data)}");
+        return {'success': false, 'message': data['message']};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error occurred: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> resetPassword(String email, String otp, String newPassword) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiService.resetPasswordUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'otp_code': otp, 'password': newPassword}),
       );
       final data = jsonDecode(response.body);
       if (response.statusCode == 200) {

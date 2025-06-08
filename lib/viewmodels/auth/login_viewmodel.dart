@@ -106,6 +106,10 @@ class LoginViewModel extends ChangeNotifier {
     Navigator.pushReplacementNamed(context, '/register');
   }
 
+  void goToForgotPassword(BuildContext context) {
+    Navigator.pushReplacementNamed(context, '/forgot_password');
+  }
+
   @override
   void dispose() {
     // TODO: implement dispose
