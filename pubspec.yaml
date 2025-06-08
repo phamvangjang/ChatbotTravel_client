@@ -45,6 +45,10 @@ dependencies:
   record: ^6.0.0
   audioplayers: ^6.4.0
   path_provider: ^2.1.5
+  google_maps_flutter: ^2.12.2
+  flutter_polyline_points: ^1.0.0
+  table_calendar: ^3.0.9
+  timeline_tile: ^2.0.0
 
 dev_dependencies:
   flutter_test:
