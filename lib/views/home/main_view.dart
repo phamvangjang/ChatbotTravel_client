@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobilev2/providers/user_provider.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/views/home/drawer_view.dart';
 import 'package:mobilev2/views/home/map_view.dart';
@@ -259,8 +260,8 @@ class _MainViewState extends State<MainView> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: Consumer<MainViewModel>(
-          builder: (context, viewModel, child) {
+        title: Consumer2<MainViewModel, UserProvider>(
+          builder: (context, viewModel, userProvider, child) {
             return Column(
               children: [
                 const Text(
@@ -271,10 +272,33 @@ class _MainViewState extends State<MainView> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (viewModel.currentConversation != null)
-                  Text(
-                    "ID: ${viewModel.currentConversation!.conversationId}",
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+
+                if (viewModel.currentConversation != null ||
+                    userProvider.user != null)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (viewModel.currentConversation != null)
+                        Text(
+                          "ID: ${viewModel.currentConversation!.conversationId}",
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 10,
+                          ),
+                        ),
+                      if (viewModel.currentConversation != null &&
+                          userProvider.user != null)
+                        const SizedBox(width: 8),
+                      // Khoảng cách giữa 2 đoạn text
+                      if (userProvider.user != null)
+                        Text(
+                          "User: ${userProvider.user!.username} (${userProvider.user!.id})",
+                          style: TextStyle(
+                            color: Colors.blue.shade600,
+                            fontSize: 10,
+                          ),
+                        ),
+                    ],
                   ),
               ],
             );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/home/drawer_viewmodel.dart';
 import 'package:mobilev2/views/home/setting_view.dart';
 import 'package:provider/provider.dart';
-import '../../models/conversation_model.dart';
 import '../../providers/user_provider.dart';
 import '../../viewmodels/home/main_viewmodel.dart';
 
@@ -11,15 +10,25 @@ class DrawerView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<UserProvider>(context).user;
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, child) {
+        final user = userProvider.user;
 
-    if (user == null) {
-      return const Center(child: Text('Người dùng chưa đăng nhập'));
-    }
+        // ✅ Debug log
+        print("🏠 DrawerView build - User: ${user?.id}");
 
-    return ChangeNotifierProvider(
-      create: (_) => DrawerViewModel(user.id),
-      child: const _DrawerContent(), // Đặt UI chính ở widget con
+        if (user == null) {
+          return const Center(child: Text('Người dùng chưa đăng nhập'));
+        }
+
+        return ChangeNotifierProvider(
+          create: (_) {
+            print("🎯 Creating DrawerViewModel with userId: ${user.id}");
+            return DrawerViewModel(user.id);
+          },
+          child: const _DrawerContent(),
+        );
+      },
     );
   }
 }
@@ -33,7 +42,7 @@ class _DrawerContent extends StatefulWidget {
 
 class _DrawerContentState extends State<_DrawerContent> {
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
+  final String _searchQuery = '';
 
   @override
   void dispose() {
@@ -41,276 +50,18 @@ class _DrawerContentState extends State<_DrawerContent> {
     super.dispose();
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) {
-      if (difference.inDays == 1) {
-        return 'Hôm qua';
-      } else if (difference.inDays < 7) {
-        return '${difference.inDays} ngày trước';
-      } else {
-        return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-      }
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} giờ trước';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} phút trước';
-    } else {
-      return 'Vừa xong';
-    }
-  }
-
-  String _getConversationTitle(Conversation conversation) {
-    final conversationTitle = conversation.title;
-    return conversationTitle.toString();
-  }
-
-  String _getConversationSubtitle(Conversation conversation) {
-    final formattedTime = _formatDateTime(conversation.startedAt);
-    final language =
-        conversation.sourceLanguage == 'vi' ? 'Tiếng Việt' : 'English';
-    return '$language • $formattedTime';
-  }
-
-  List<Conversation> _getFilteredConversations(
-    List<Conversation> conversations,
-  ) {
-    if (_searchQuery.isEmpty) {
-      return conversations;
-    }
-
-    return conversations.where((conversation) {
-      final title = _getConversationTitle(conversation).toLowerCase();
-      final subtitle = _getConversationSubtitle(conversation).toLowerCase();
-      final query = _searchQuery.toLowerCase();
-
-      return title.contains(query) || subtitle.contains(query);
-    }).toList();
-  }
-
-  void _onConversationTap(
-    BuildContext context,
-    Conversation conversation,
-  ) async {
-    final mainViewModel = context.read<MainViewModel>();
-
-    // Đóng drawer trước
-    Navigator.of(context).pop();
-
-    // Hiển thị loading indicator
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(width: 12),
-            Text('Đang tải cuộc trò chuyện...'),
-          ],
-        ),
-        duration: Duration(seconds: 1),
-      ),
-    );
-
-    // Tải cuộc trò chuyện
-    try {
-      await mainViewModel.loadConversation(conversation.conversationId);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Lỗi tải cuộc trò chuyện: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _handleNewConversationTap(BuildContext context) {
-    final mainViewModel = context.read<MainViewModel>();
-
-    // Kiểm tra xem cuộc trò chuyện hiện tại có tin nhắn hay không
-    final currentMessages = mainViewModel.messages;
-    final hasMessages = currentMessages.isNotEmpty;
-
-    if (!hasMessages) {
-      // Nếu chưa có tin nhắn, hiển thị thông báo
-      _showEmptyConversationWarning(context);
-    } else {
-      // Nếu đã có tin nhắn, cho phép tạo cuộc trò chuyện mới
-      _showNewConversationDialog(context);
-    }
-  }
-
-  void _showEmptyConversationWarning(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            icon: Icon(
-              Icons.info_outline,
-              color: Colors.orange.shade600,
-              size: 48,
-            ),
-            title: const Text(
-              'Cuộc trò chuyện trống',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Cuộc trò chuyện hiện tại chưa có tin nhắn nào.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Hãy gửi ít nhất một tin nhắn trước khi tạo cuộc trò chuyện mới.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext); // Đóng dialog
-                  Navigator.pop(context); // Đóng drawer
-                },
-                child: const Text('Đã hiểu'),
-              ),
-            ],
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-    );
-  }
-
-  void _showNewConversationDialog(BuildContext context) {
-    // CAPTURE THE VIEWMODELS BEFORE SHOWING DIALOG
-    final mainViewModel = context.read<MainViewModel>();
-    final drawerViewModel = context.read<DrawerViewModel>();
-
-    showDialog(
-      context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            icon: Icon(
-              Icons.chat_bubble_outline,
-              color: Colors.blue.shade600,
-              size: 48,
-            ),
-            title: const Text(
-              'Cuộc trò chuyện mới',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Bạn có muốn bắt đầu cuộc trò chuyện mới không?',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Cuộc trò chuyện hiện tại sẽ được lưu lại.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Hủy'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(dialogContext); // Đóng dialog
-                  Navigator.pop(context); // Đóng drawer
-
-                  // Show loading indicator
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Row(
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Text('Đang tạo cuộc trò chuyện mới...'),
-                        ],
-                      ),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-
-                  try {
-                    // Use the captured viewmodels
-                    await mainViewModel.startNewConversation();
-
-                    // Refresh drawer conversations
-                    await drawerViewModel.loadConversations();
-
-                    // Show success message
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Đã tạo cuộc trò chuyện mới thành công!'),
-                        backgroundColor: Colors.green,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  } catch (e) {
-                    // Show error message
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Lỗi tạo cuộc trò chuyện: $e'),
-                        backgroundColor: Colors.red,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Tạo mới'),
-              ),
-            ],
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Consumer2<DrawerViewModel, MainViewModel>(
-      builder: (context, drawerViewModel, mainViewModel, child) {
-        final conversations = drawerViewModel.conversations;
+    return Consumer3<DrawerViewModel, MainViewModel, UserProvider>(
+      builder: (context, drawerViewModel, mainViewModel, userProvider, child) {
+        // ✅ Debug logs
+        print("🔍 _DrawerContent build:");
+        print("   UserProvider user ID: ${userProvider.user?.id}");
+        print("   DrawerViewModel user ID: ${drawerViewModel.userId}");
+        print("   MainViewModel user ID: ${mainViewModel.currentUserId}");
+        final filteredConversations = drawerViewModel.getFilteredConversations();
         final isLoading = drawerViewModel.isLoading;
         final user = Provider.of<UserProvider>(context).user;
-        final filteredConversations = _getFilteredConversations(conversations);
         final hasMessages = mainViewModel.messages.isNotEmpty;
 
         return Drawer(
@@ -353,11 +104,16 @@ class _DrawerContentState extends State<_DrawerContent> {
                             Stack(
                               children: [
                                 IconButton(
-                                  onPressed: () => _handleNewConversationTap(context),
-                                  icon: const Icon(Icons.add, color: Colors.white),
-                                  tooltip: hasMessages
-                                      ? 'Tạo cuộc trò chuyện mới'
-                                      : 'Gửi tin nhắn trước khi tạo mới',
+                                  onPressed:
+                                      () => drawerViewModel.handleNewConversationTap(context, mainViewModel),
+                                  icon: const Icon(
+                                    Icons.add,
+                                    color: Colors.white,
+                                  ),
+                                  tooltip:
+                                      hasMessages
+                                          ? 'Tạo cuộc trò chuyện mới'
+                                          : 'Gửi tin nhắn trước khi tạo mới',
                                 ),
                                 // Hiển thị indicator nếu cuộc trò chuyện trống
                                 if (!hasMessages)
@@ -382,7 +138,7 @@ class _DrawerContentState extends State<_DrawerContent> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '${conversations.length} cuộc trò chuyện',
+                              '${drawerViewModel.conversations.length} cuộc trò chuyện',
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
@@ -427,9 +183,7 @@ class _DrawerContentState extends State<_DrawerContent> {
                                   icon: const Icon(Icons.clear),
                                   onPressed: () {
                                     _searchController.clear();
-                                    setState(() {
-                                      _searchQuery = '';
-                                    });
+                                    drawerViewModel.setSearchQuery('');
                                   },
                                 )
                                 : null,
@@ -442,9 +196,7 @@ class _DrawerContentState extends State<_DrawerContent> {
                         ),
                       ),
                       onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
+                        drawerViewModel.setSearchQuery(value);
                       },
                     ),
                   ),
@@ -469,7 +221,7 @@ class _DrawerContentState extends State<_DrawerContent> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    _searchQuery.isNotEmpty
+                                    drawerViewModel.searchQuery.isNotEmpty
                                         ? Icons.search_off
                                         : Icons.chat_bubble_outline,
                                     size: 64,
@@ -477,7 +229,7 @@ class _DrawerContentState extends State<_DrawerContent> {
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
-                                    _searchQuery.isNotEmpty
+                                    drawerViewModel.searchQuery.isNotEmpty
                                         ? 'Không tìm thấy cuộc trò chuyện'
                                         : 'Chưa có cuộc trò chuyện nào',
                                     style: const TextStyle(
@@ -485,7 +237,7 @@ class _DrawerContentState extends State<_DrawerContent> {
                                       fontSize: 16,
                                     ),
                                   ),
-                                  if (_searchQuery.isEmpty) ...[
+                                  if (drawerViewModel.searchQuery.isEmpty) ...[
                                     const SizedBox(height: 8),
                                     const Text(
                                       'Nhấn nút + để tạo mới',
@@ -564,7 +316,7 @@ class _DrawerContentState extends State<_DrawerContent> {
                                       ),
                                     ),
                                     title: Text(
-                                      _getConversationTitle(conversation),
+                                      drawerViewModel.getConversationTitle(conversation),
                                       style: TextStyle(
                                         fontWeight:
                                             isSelected
@@ -578,7 +330,7 @@ class _DrawerContentState extends State<_DrawerContent> {
                                       ),
                                     ),
                                     subtitle: Text(
-                                      _getConversationSubtitle(conversation),
+                                      drawerViewModel.getConversationSubtitle(conversation),
                                       style: TextStyle(
                                         fontSize: 12,
                                         color:
@@ -600,9 +352,10 @@ class _DrawerContentState extends State<_DrawerContent> {
                                               color: Colors.grey,
                                             ),
                                     onTap:
-                                        () => _onConversationTap(
+                                        () => drawerViewModel.onConversationTap(
                                           context,
                                           conversation,
+                                          mainViewModel
                                         ),
                                   ),
                                 );

@@ -6,19 +6,24 @@ class UserProvider extends ChangeNotifier{
   UserModel? get user => _userModel;
 
   void setUser(UserModel user) {
+    print("👤 UserProvider.setUser: ${user.id}");
     _userModel = user;
     notifyListeners();
   }
 
   void clearUser() {
+    print("👤 UserProvider.clearUser");
     _userModel = null;
     notifyListeners();
   }
 
   void setUserIfAvailable(UserModel? user) {
     if (user != null) {
+      print("👤 UserProvider.setUserIfAvailable: ${user.id}");
       _userModel = user;
       notifyListeners();
+    }else{
+      print("👤 UserProvider.setUserIfAvailable: user is null");
     }
   }
 }

@@ -8,9 +8,7 @@ import '../../services/home/chat_service.dart';
 class MainViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
   final VoiceService _voiceService = VoiceService();
-  final int _currentUserId;
-
-  MainViewModel(this._currentUserId);
+  int? _currentUserId;
 
   // State variables
   List<Message> _messages = [];
@@ -35,15 +33,55 @@ class MainViewModel extends ChangeNotifier {
     return _isRecording;
   }
   String? get error => _error;
-  int get currentUserId => _currentUserId;
+  int? get currentUserId => _currentUserId;
+
+  // ✅ Getter để kiểm tra user hợp lệ
+  bool get hasValidUser => _currentUserId != null && _currentUserId! > 0;
 
   // Lấy amplitude stream để tạo waveform
   Stream<Amplitude>? getAmplitudeStream() {
     return _voiceService.getAmplitudeStream();
   }
 
+  // ✅ Method để update userId từ UserProvider
+  void updateUserId(int? newUserId) {
+    print("🔄 updateUserId called: old=$_currentUserId, new=$newUserId");
+
+    if (_currentUserId != newUserId) {
+      print("✅ User ID changed from $_currentUserId to $newUserId");
+
+      final oldUserId = _currentUserId;
+      _currentUserId = newUserId;
+
+      // Reset data khi user thay đổi
+      if (oldUserId != null && newUserId != oldUserId) {
+        print("🔄 Resetting user data due to user change");
+        _resetUserData();
+        _lastInitializedUserId = null;
+      }
+
+      // ✅ Thông báo listeners về thay đổi
+      notifyListeners();
+
+      // Khởi tạo lại nếu có user hợp lệ
+      if (hasValidUser) {
+        print("🚀 Initializing MainViewModel for user $newUserId");
+        initialize();
+      } else {
+        print("⚠️ No valid user, skipping initialization");
+      }
+    } else {
+      print("ℹ️ User ID unchanged: $_currentUserId");
+    }
+  }
+
   // Khởi tạo ViewModel
   Future<void> initialize() async {
+    if (!hasValidUser) {
+      print("No valid user, skipping initialization");
+      return;
+    }
+
     // Kiểm tra xem có phải user mới hay không
     bool isNewUser = _lastInitializedUserId != _currentUserId;
 
@@ -52,14 +90,29 @@ class MainViewModel extends ChangeNotifier {
       _resetUserData();
       _lastInitializedUserId = _currentUserId;
     }
+
     await loadUserConversations();
 
-    // Nếu có cuộc trò chuyện gần nhất, tải nó
+    // Tải cuộc trò chuyện mới nhất của user hiện tại
     if (_conversations.isNotEmpty) {
-      final latestConversation = _conversations.first;
-      await loadConversation(latestConversation.conversationId);
+      // Lọc các cuộc trò chuyện thuộc về user hiện tại
+      final userConversations = _conversations.where(
+              (conv) => conv.userId == _currentUserId
+      ).toList();
+
+      if (userConversations.isNotEmpty) {
+        // Sắp xếp theo thời gian mới nhất và lấy conversation đầu tiên
+        userConversations.sort((a, b) => b.startedAt.compareTo(a.startedAt));
+        final latestConversation = userConversations.first;
+
+        print("Loading latest conversation for user $_currentUserId: ${latestConversation.conversationId}");
+        await loadConversation(latestConversation.conversationId);
+      } else {
+        print("No conversations found for user $_currentUserId, creating new one");
+        await createNewConversation();
+      }
     } else {
-      // Nếu không có cuộc trò chuyện nào, tạo mới
+      print("No conversations exist, creating new one for user $_currentUserId");
       await createNewConversation();
     }
   }
@@ -84,15 +137,28 @@ class MainViewModel extends ChangeNotifier {
 
   // Tải danh sách cuộc trò chuyện của user
   Future<void> loadUserConversations() async {
+    if (!hasValidUser) return;
     _setLoading(true);
     clearError();
 
     try {
-      _conversations = await _chatService.getUserConversations(_currentUserId);
+      print("Loading conversations for user: $_currentUserId");
+
+      // Đảm bảo chỉ load conversations của user hiện tại
+      _conversations = await _chatService.getUserConversations(_currentUserId!);
+
+      // Double check: Lọc lại để đảm bảo chỉ có conversations của user hiện tại
+      _conversations = _conversations.where(
+              (conv) => conv.userId == _currentUserId
+      ).toList();
+
       // Sắp xếp theo thời gian mới nhất
       _conversations.sort((a, b) => b.startedAt.compareTo(a.startedAt));
+
+      print("Loaded ${_conversations.length} conversations for user $_currentUserId");
       notifyListeners();
     } catch (e) {
+      print("Error loading conversations for user $_currentUserId: $e");
       _setError(e.toString());
     } finally {
       _setLoading(false);
@@ -101,19 +167,32 @@ class MainViewModel extends ChangeNotifier {
 
   // Tải một cuộc trò chuyện cụ thể
   Future<void> loadConversation(int conversationId) async {
+    if (!hasValidUser) return;
     _setLoading(true);
     clearError();
+
     try {
-      // Tìm cuộc trò chuyện trong danh sách
-      _currentConversation = _conversations.firstWhere(
-        (conv) => conv.conversationId == conversationId,
+      print("Loading conversation $conversationId for user $_currentUserId");
+
+      // Tìm cuộc trò chuyện trong danh sách và validate
+      final conversation = _conversations.firstWhere(
+            (conv) => conv.conversationId == conversationId && conv.userId == _currentUserId,
+        orElse: () => throw Exception("Conversation $conversationId not found or doesn't belong to user $_currentUserId"),
       );
+
+      _currentConversation = conversation;
 
       // Tải tin nhắn của cuộc trò chuyện
       _messages = await _chatService.getConversationMessages(conversationId);
+
+      print("Loaded ${_messages.length} messages for conversation $conversationId");
       notifyListeners();
     } catch (e) {
+      print("Error loading conversation $conversationId: $e");
       _setError(e.toString());
+
+      // Nếu không tải được conversation, tạo mới
+      await createNewConversation();
     } finally {
       _setLoading(false);
     }
@@ -121,21 +200,31 @@ class MainViewModel extends ChangeNotifier {
 
   // Tạo cuộc trò chuyện mới
   Future<void> createNewConversation() async {
+    if (!hasValidUser) return;
     _setLoading(true);
     clearError();
 
     try {
+      print("Creating new conversation for user $_currentUserId");
+
       final newConversation = await _chatService.createNewConversation(
-        _currentUserId,
+        _currentUserId!,
         _sourceLanguage,
       );
+
+      // Validate conversation được tạo đúng user
+      if (newConversation.userId != _currentUserId) {
+        throw Exception("Created conversation doesn't belong to current user");
+      }
 
       _currentConversation = newConversation;
       _conversations.insert(0, newConversation);
       _messages = [];
 
+      print("Created new conversation ${newConversation.conversationId} for user $_currentUserId");
       notifyListeners();
     } catch (e) {
+      print("Error creating new conversation for user $_currentUserId: $e");
       _setError(e.toString());
     } finally {
       _setLoading(false);
@@ -144,7 +233,7 @@ class MainViewModel extends ChangeNotifier {
 
   // Gửi tin nhắn dạng text
   Future<void> sendMessage(String messageText) async {
-    if (_currentConversation == null || messageText.trim().isEmpty) return;
+    if (!hasValidUser || _currentConversation == null || messageText.trim().isEmpty) return;
 
     _setSending(true);
     clearError();
@@ -293,6 +382,7 @@ class MainViewModel extends ChangeNotifier {
 
   // Refresh toàn bộ dữ liệu
   Future<void> refresh() async {
+    if (!hasValidUser) return;
     await loadUserConversations();
     if (_currentConversation != null) {
       await loadConversation(_currentConversation!.conversationId);
@@ -323,10 +413,11 @@ class MainViewModel extends ChangeNotifier {
   void setCurrentUser(int userId, String language) {
     bool isUserChanged = _currentUserId != userId;
 
-    //_currentUserId = userId;
+    _currentUserId = userId;
     _sourceLanguage = language;
 
     if (isUserChanged) {
+      print("User changed from $_currentUserId to $userId");
       // Reset dữ liệu khi user thay đổi
       _resetUserData();
       _lastInitializedUserId = null; // Reset để force initialize lại
@@ -339,7 +430,7 @@ class MainViewModel extends ChangeNotifier {
   void logout() {
     _resetUserData();
     _lastInitializedUserId = null;
-    //_currentUserId = 0; // hoặc giá trị mặc định
+    _currentUserId = 0; // hoặc giá trị mặc định
   }
 
   void sendAudioMessage() async {

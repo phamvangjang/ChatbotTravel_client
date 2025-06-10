@@ -42,12 +42,25 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LoginViewModel()),
         ChangeNotifierProvider(create: (_) => RegisterViewModel()),
         ChangeNotifierProvider(create: (_) => VerifyOtpViewModel()),
-        ChangeNotifierProvider(create: (_) => MainViewModel(user!.id)),
-        ChangeNotifierProvider(create: (_) => SettingViewModel()),
         ChangeNotifierProvider(create: (_) => ForgotPasswordViewModel()),
         ChangeNotifierProvider(create: (_) => ResetPasswordViewModel()),
-        // ChangeNotifierProvider(create: (_) => DrawerViewModel(user!.id)),
         ChangeNotifierProvider(create: (_) => UserProvider()..setUserIfAvailable(user)),
+        ChangeNotifierProvider(create: (_) => SettingViewModel()),
+        ChangeNotifierProxyProvider<UserProvider, MainViewModel>(
+          create: (_) => MainViewModel(),
+          update: (context, userProvider, previous) {
+            print("🔄 ChangeNotifierProxyProvider update called");
+            print("👤 UserProvider user: ${userProvider.user?.id}");
+            final mainViewModel = previous ?? MainViewModel();
+
+            // ✅ Cập nhật userId từ UserProvider
+            final newUserId = userProvider.user?.id;
+            print("🆔 Updating MainViewModel with userId: $newUserId");
+
+            mainViewModel.updateUserId(newUserId);
+            return mainViewModel;
+          },
+        ),
       ],
       child: MyApp(isLoggedIn: isLoggedIn),
     ),

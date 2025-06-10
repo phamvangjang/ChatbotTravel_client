@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
-import '../../services/auth/auth_service.dart';
+import '../../viewmodels/home/setting_viewmodel.dart';
 
 class SettingView extends StatefulWidget {
   const SettingView({super.key});
@@ -63,15 +63,40 @@ class _SettingView extends State<SettingView> {
             ),
           ),
           const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
-            onTap: () async {
-              await AuthService().logout();
-              Provider.of<UserProvider>(context, listen: false).clearUser();
-              Navigator.pop(context);
-              Navigator.of(context, rootNavigator: true)
-                  .pushNamedAndRemoveUntil('/login', (route) => false);
+          Consumer<SettingViewModel>(
+            builder: (context, settingViewModel, child) {
+              return ListTile(
+                leading:
+                    settingViewModel.isLoggingOut
+                        ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.logout, color: Colors.red),
+                title: Text(
+                  settingViewModel.isLoggingOut
+                      ? 'Đang đăng xuất...'
+                      : 'Đăng xuất',
+                  style: TextStyle(
+                    color:
+                        settingViewModel.isLoggingOut
+                            ? Colors.grey
+                            : Colors.red,
+                  ),
+                ),
+                enabled: !settingViewModel.isLoggingOut,
+                onTap:
+                    settingViewModel.isLoggingOut
+                        ? null
+                        : () async {
+                          final shouldLogout = await settingViewModel
+                              .showLogoutConfirmation(context);
+                          if (shouldLogout) {
+                            await settingViewModel.logout(context);
+                          }
+                        },
+              );
             },
           ),
         ],
