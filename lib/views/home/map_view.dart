@@ -173,6 +173,7 @@ class _MapTab extends StatelessWidget {
       children: [
         // Thông tin tin nhắn
         if (viewModel.messageContent.isNotEmpty)
+          //Information from AI
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -188,7 +189,7 @@ class _MapTab extends StatelessWidget {
                 Text(
                   viewModel.messageContent,
                   style: const TextStyle(fontSize: 12),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -952,6 +953,7 @@ class _AttractionInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
+        //Image thumb
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: Image.network(
@@ -970,6 +972,8 @@ class _AttractionInfoCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
+
+        //Name, address, rating
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1012,6 +1016,8 @@ class _AttractionInfoCard extends StatelessWidget {
             ],
           ),
         ),
+
+        //action add or cancel
         Column(
           children: [
             ElevatedButton(

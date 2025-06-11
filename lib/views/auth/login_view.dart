@@ -42,7 +42,7 @@ class _LoginViewState extends State<LoginView> {
                       TextField(
                         controller: viewModel.emailController,
                         decoration: const InputDecoration(
-                          labelText: 'Địa chỉ Email',
+                          labelText: 'Địa chỉ email',
                           suffix: Text(
                             'Edit',
                             style: TextStyle(color: Colors.blue),

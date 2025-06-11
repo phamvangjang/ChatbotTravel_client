@@ -56,7 +56,7 @@ class _RegisterViewState extends State<RegisterView> {
                       TextField(
                         controller: viewModel.emailController,
                         decoration: const InputDecoration(
-                          labelText: 'Địa chỉ Email',
+                          labelText: 'Địa chỉ email',
                           suffix: Text(
                             'Sửa',
                             style: TextStyle(color: Colors.blue),

@@ -45,7 +45,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                       TextField(
                         controller: viewModel.emailController,
                         decoration: const InputDecoration(
-                          labelText: 'Địa chỉ Email',
+                          labelText: 'Địa chỉ email',
                           suffix: Text(
                             'Edit',
                             style: TextStyle(color: Colors.blue),

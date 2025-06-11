@@ -67,32 +67,6 @@ class DrawerViewModel extends ChangeNotifier {
   void _clearError() {
     _error = null;
   }
-  /*
-  List<Conversation> get conversations => _conversations;
-
-  bool get isLoading => _isLoading;
-
-  DrawerViewModel(this.userId) {
-    print("Khởi tạo DrawerViewModel với userId: $userId");
-    fetchConversations();
-  }
-
-  Future<void> fetchConversations() async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      _conversations = await _chatService.getUserConversations(userId);
-      print(_conversations);
-    } catch (e) {
-      debugPrint("Lỗi khi tải cuộc trò chuyện: $e");
-      _conversations = [];
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-   */
 
   Future<void> onConversationTap(
       BuildContext context,

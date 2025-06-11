@@ -1,11 +1,13 @@
 import 'dart:math';
 
 import 'package:latlong2/latlong.dart';
+import 'package:mobilev2/scape/attraction_scape.dart';
 
 import '../../models/attraction_model.dart';
 
 class AttractionService{
   static final AttractionService _instance = AttractionService._internal();
+  final AttractionScape _attractionScape = AttractionScape();
   factory AttractionService() => _instance;
   AttractionService._internal();
 
@@ -19,7 +21,7 @@ class AttractionService{
       name: 'Nhà thờ Đức Bà',
       address: 'Công xã Paris, Bến Nghé, Quận 1, Hồ Chí Minh',
       description: 'Nhà thờ chính tòa Đức Bà Sài Gòn là nhà thờ chính tòa của Tổng giáo phận Thành phố Hồ Chí Minh.',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/ed/Notre-Dame_Cathedral_Basilica_of_Saigon_%28Ho_Chi_Minh_City%29.jpg',
+      imageUrl: 'https://cdn.projectexpedition.com/photos/57e5ff71a61d3_sized.jpg',
       rating: 4.5,
       location: LatLng(10.7798, 106.6990),
       category: 'religious',
@@ -31,7 +33,7 @@ class AttractionService{
       name: 'Bưu điện Trung tâm Sài Gòn',
       address: '2 Công xã Paris, Bến Nghé, Quận 1, Hồ Chí Minh',
       description: 'Bưu điện Trung tâm Sài Gòn là một công trình kiến trúc tiêu biểu tại Thành phố Hồ Chí Minh.',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/c0/Central_Post_Office%2C_Ho_Chi_Minh_City.jpg',
+      imageUrl: 'https://vietnamtour.in/wp-content/uploads/Saigon-Central-Post-Office.jpg.jpg',
       rating: 4.3,
       location: LatLng(10.7802, 106.7001),
       category: 'historical',
@@ -43,9 +45,11 @@ class AttractionService{
       name: 'Chợ Bến Thành',
       address: 'Lê Lợi, Bến Thành, Quận 1, Hồ Chí Minh',
       description: 'Chợ Bến Thành là một khu chợ nằm ở Quận 1, Thành phố Hồ Chí Minh và là một biểu tượng của thành phố này.',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f8/Ben_Thanh_market_2.jpg',
+      imageUrl: 'https://cdn3.ivivu.com/2022/10/cho_ben_thanh_ivivu.jpeg',
       rating: 4.0,
-      location: LatLng(10.7721, 106.6980),
+      // location: LatLng(10.7721, 106.6980),
+      location: LatLng(10.772427,106.697988
+      ),
       category: 'market',
       tags: ['chợ', 'mua sắm', 'ẩm thực'],
       openingHours: '6:00 - 18:00',
@@ -55,7 +59,7 @@ class AttractionService{
       name: 'Bảo tàng Chứng tích Chiến tranh',
       address: '28 Võ Văn Tần, Phường 6, Quận 3, Hồ Chí Minh',
       description: 'Bảo tàng Chứng tích Chiến tranh là một bảo tàng về Chiến tranh Việt Nam tại Thành phố Hồ Chí Minh.',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b5/War_Remnants_Museum.jpg',
+      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/War_Remnants_Museum%2C_HCMC%2C_front.JPG/500px-War_Remnants_Museum%2C_HCMC%2C_front.JPG',
       rating: 4.6,
       location: LatLng(10.7798, 106.6922),
       category: 'museum',
@@ -68,7 +72,7 @@ class AttractionService{
       name: 'Dinh Độc Lập',
       address: '135 Nam Kỳ Khởi Nghĩa, Phường Bến Thành, Quận 1, Hồ Chí Minh',
       description: 'Dinh Độc Lập, còn được gọi là Dinh Thống Nhất, là một công trình kiến trúc lịch sử tại Thành phố Hồ Chí Minh.',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/1/1e/Independence-Palace-1.jpg',
+      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/7d/20190923_Independence_Palace-10.jpg',
       rating: 4.4,
       location: LatLng(10.7772, 106.6958),
       category: 'historical',
@@ -81,7 +85,7 @@ class AttractionService{
       name: 'Phố đi bộ Nguyễn Huệ',
       address: 'Đường Nguyễn Huệ, Quận 1, Hồ Chí Minh',
       description: 'Phố đi bộ Nguyễn Huệ là một không gian văn hóa, giải trí và mua sắm tại trung tâm Thành phố Hồ Chí Minh.',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Nguyen_Hue_Walking_Street.jpg',
+      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Nguyen_Hue_Street_2020.jpg/1920px-Nguyen_Hue_Street_2020.jpg',
       rating: 4.2,
       location: LatLng(10.7743, 106.7038),
       category: 'entertainment',
@@ -93,7 +97,7 @@ class AttractionService{
       name: 'Chùa Jade Emperor',
       address: '73 Mai Thị Lựu, Đa Kao, Quận 1, Hồ Chí Minh',
       description: 'Chùa Ngọc Hoàng là một ngôi chùa Đạo giáo nổi tiếng tại Thành phố Hồ Chí Minh.',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/3/3a/Jade_Emperor_Pagoda.jpg',
+      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Jade_Emperor_Pagoda_Saigon.jpg/800px-Jade_Emperor_Pagoda_Saigon.jpg',
       rating: 4.7,
       location: LatLng(10.7892, 106.6917),
       category: 'religious',
@@ -105,7 +109,7 @@ class AttractionService{
       name: 'Landmark 81',
       address: '720A Điện Biên Phủ, Bình Thạnh, Hồ Chí Minh',
       description: 'Landmark 81 là tòa nhà chọc trời cao nhất Việt Nam và Đông Nam Á.',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f4/Landmark_81_Skydeck.jpg',
+      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e6/Ho_Chi_Minh_City_panorama_2019_%28cropped%29.jpg',
       rating: 4.3,
       location: LatLng(10.7953, 106.7218),
       category: 'modern',
@@ -131,7 +135,7 @@ class AttractionService{
       await Future.delayed(const Duration(milliseconds: 500)); // Giả lập delay API
 
       // Lọc địa điểm trong bán kính
-      List<Attraction> nearbyAttractions = _sampleAttractions.where((attraction) {
+      List<Attraction> nearbyAttractions = _attractionScape.hcmAttractions.where((attraction) {
         double distance = _calculateDistance(currentLocation, attraction.location);
         return distance <= radiusInKm * 1000; // Chuyển km sang mét
       }).toList();
