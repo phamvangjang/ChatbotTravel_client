@@ -11,76 +11,63 @@ import 'package:latlong2/latlong.dart';
 import '../../models/attraction_model.dart';
 import '../../models/itinerary_item.dart';
 import '../../services/home/attraction_service.dart';
-import '../../services/home/location_service.dart';
 
 class MapViewModel extends ChangeNotifier {
   // Services
-  final LocationService _locationService = LocationService();
+  //final LocationService _locationService = LocationService();
   final AttractionService _attractionService = AttractionService();
 
-  // Mapbox access token - THAY ĐỔI TOKEN NÀY
+  // Mapbox access token
   final String mapboxAccessToken = dotenv.env["MAPBOX_ACCESS_TOKEN"]!;
 
   // Mapbox style URL
-  final String mapboxStyleUrl = 'mapbox://styles/mapbox/streets-v12';
+  final String mapboxStyleUrl = dotenv.env["MAPBOX_STYLE_URL"]!;
 
   // Mapbox directions API URL
-  final String directionsApiUrl =
-      'https://api.mapbox.com/directions/v5/mapbox/walking';
+  final String directionsApiUrl = dotenv.env["DIRECTIONS_API_URL"]!;
 
   // Trạng thái
   bool _isLoading = true;
-
   bool get isLoading => _isLoading;
 
   // Vị trí hiện tại
   Position? _currentPosition;
-
   Position? get currentPosition => _currentPosition;
 
   // Vị trí ban đầu (mặc định: Hồ Chí Minh)
   LatLng _initialPosition = LatLng(10.7769, 106.7009);
-
   LatLng get initialPosition => _initialPosition;
 
   // Nội dung tin nhắn
   String _messageContent = '';
-
   String get messageContent => _messageContent;
 
   // ID cuộc trò chuyện
   int _conversationId = 0;
-
   int get conversationId => _conversationId;
 
   // Danh sách địa điểm du lịch
   List<Attraction> _detectedAttractions = [];
-
   List<Attraction> get detectedAttractions => _detectedAttractions;
 
   // Địa điểm được chọn
   Attraction? _selectedAttraction;
-
   Attraction? get selectedAttraction => _selectedAttraction;
 
   // Markers trên bản đồ
   List<Marker> _markers = [];
-
   List<Marker> get markers => _markers;
 
   // Polylines trên bản đồ
   List<Polyline> _polylines = [];
-
   List<Polyline> get polylines => _polylines;
 
   // Lịch trình theo ngày
   final Map<DateTime, List<ItineraryItem>> _dailyItineraries = {};
-
   Map<DateTime, List<ItineraryItem>> get dailyItineraries => _dailyItineraries;
 
   // Ngày được chọn
   DateTime _selectedDate = DateTime.now();
-
   DateTime get selectedDate => _selectedDate;
 
   // Lịch trình của ngày được chọn
@@ -95,8 +82,17 @@ class MapViewModel extends ChangeNotifier {
 
   // Controller cho MapboxMap
   MapController? _mapController;
-
   MapController? get mapController => _mapController;
+
+  bool _isMapControllerActive = true;
+  // Phương thức để kiểm tra và đặt lại controller
+  void setMapControllerActive(bool isActive) {
+    _isMapControllerActive = isActive;
+    if (!isActive && _mapController != null) {
+      // Đặt lại controller khi widget bị hủy
+      _mapController = null;
+    }
+  }
 
   // Khởi tạo
   Future<void> initialize(String messageContent, int conversationId) async {
@@ -109,7 +105,7 @@ class MapViewModel extends ChangeNotifier {
     _mapController = MapController();
 
     // Lấy vị trí hiện tại
-    await _getCurrentLocation();
+    await _getCurrentLocationAndSetInitial();
 
     // Phát hiện địa điểm từ nội dung tin nhắn
     await _detectAttractionsFromMessage();
@@ -118,18 +114,56 @@ class MapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Lấy vị trí hiện tại
-  Future<void> _getCurrentLocation() async {
-    try {
-      _currentPosition = await _locationService.getCurrentLocation();
+  Future<void> _getCurrentLocationAndSetInitial() async{
+    try{
+      print('🔍 Đang lấy vị trí hiện tại...');
+
+      // Kiểm tra quyền truy cập vị trí
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          print('❌ Quyền truy cập vị trí bị từ chối');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        print('❌ Quyền truy cập vị trí bị từ chối vĩnh viễn');
+        return;
+      }
+
+      /*
+      // Lấy vị trí hiện tại với độ chính xác cao
+      _currentPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 10),
+      );
+       */
+      // Sử dụng LocationSettings mới
+      LocationSettings locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10)
+      );
+
+      _currentPosition = await Geolocator.getCurrentPosition(
+        locationSettings: locationSettings,
+      );
+
       if (_currentPosition != null) {
         _initialPosition = LatLng(
           _currentPosition!.latitude,
           _currentPosition!.longitude,
         );
+
+        print('✅ Đã lấy vị trí hiện tại: ${_currentPosition!.latitude}, ${_currentPosition!.longitude}');
+        print('📍 Vị trí ban đầu được cập nhật: $_initialPosition');
+      } else {
+        print('⚠️ Không thể lấy vị trí hiện tại, sử dụng vị trí mặc định');
       }
-    } catch (e) {
-      print('Error getting location: $e');
+    }catch (e) {
+      print('❌ Lỗi khi lấy vị trí hiện tại: $e');
+      print('📍 Sử dụng vị trí mặc định: $_initialPosition');
     }
   }
 
@@ -202,33 +236,42 @@ class MapViewModel extends ChangeNotifier {
     // Thêm markers cho các địa điểm
     for (var attraction in _detectedAttractions) {
       final isSelected = _selectedAttraction?.id == attraction.id;
+      final isInItinerary = _isAttractionInTodayItinerary(attraction);
 
       _markers.add(
         Marker(
           point: attraction.location,
           width: 40,
           height: 40,
-          builder:
-              (context) => GestureDetector(
-                onTap: () => selectAttraction(attraction),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isSelected ? Colors.green : Colors.red,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: Icon(
-                    Icons.location_on,
-                    color: Colors.white,
-                    size: isSelected ? 24 : 20,
-                  ),
-                ),
+          builder: (context) => GestureDetector(
+            onTap: () => selectAttraction(attraction),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.green
+                    : isInItinerary
+                    ? Colors.orange
+                    : Colors.red,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
               ),
+              child: Icon(
+                isInItinerary ? Icons.schedule : Icons.location_on,
+                color: Colors.white,
+                size: isSelected ? 24 : 20,
+              ),
+            ),
+          ),
         ),
       );
     }
 
     notifyListeners();
+  }
+
+  // Kiểm tra địa điểm có trong lịch trình hôm nay không
+  bool _isAttractionInTodayItinerary(Attraction attraction) {
+    return todayItinerary.any((item) => item.attraction.id == attraction.id);
   }
 
   // Chọn địa điểm
@@ -237,8 +280,13 @@ class MapViewModel extends ChangeNotifier {
     _updateMarkers();
 
     // Di chuyển bản đồ đến địa điểm được chọn
-    if (_mapController != null) {
-      _mapController!.move(attraction.location, 15.0);
+    if (_mapController != null && _isMapControllerActive) {
+      try {
+        _mapController!.move(attraction.location, 15.0);
+      } catch (e) {
+        print('❌ Lỗi khi di chuyển bản đồ: $e');
+        _mapController = null;
+      }
     }
 
     // Vẽ đường đi từ vị trí hiện tại đến địa điểm được chọn
@@ -288,15 +336,112 @@ class MapViewModel extends ChangeNotifier {
     }
   }
 
+  // VẼ ĐƯỜNG NỐI CÁC ĐỊA ĐIỂM TRONG LỊCH TRÌNH
+  Future<void> _drawItineraryRoute() async {
+    try {
+      final itinerary = todayItinerary;
+      if (itinerary.length < 2) {
+        // Nếu ít hơn 2 địa điểm, chỉ vẽ từ vị trí hiện tại đến địa điểm đầu tiên
+        if (itinerary.length == 1 && _currentPosition != null) {
+          await _getDirections(
+            LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+            itinerary.first.attraction.location,
+          );
+        }
+        return;
+      }
+
+      print('🗺️ Đang vẽ tuyến đường cho ${itinerary.length} địa điểm...');
+
+      List<Polyline> itineraryPolylines = [];
+
+      // Tạo danh sách các điểm theo thứ tự thời gian
+      List<LatLng> waypoints = [];
+
+      // Thêm vị trí hiện tại làm điểm bắt đầu (nếu có)
+      if (_currentPosition != null) {
+        waypoints.add(LatLng(_currentPosition!.latitude, _currentPosition!.longitude));
+      }
+
+      // Thêm các địa điểm trong lịch trình theo thứ tự thời gian
+      for (var item in itinerary) {
+        waypoints.add(item.attraction.location);
+      }
+
+      // Vẽ đường nối từng cặp điểm liên tiếp
+      for (int i = 0; i < waypoints.length - 1; i++) {
+        final start = waypoints[i];
+        final end = waypoints[i + 1];
+
+        try {
+          final response = await http.get(
+            Uri.parse(
+              '$directionsApiUrl/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?geometries=geojson&access_token=$mapboxAccessToken',
+            ),
+          );
+
+          if (response.statusCode == 200) {
+            final data = json.decode(response.body);
+
+            if (data['routes'] != null && data['routes'].isNotEmpty) {
+              final route = data['routes'][0];
+              final geometry = route['geometry'];
+
+              if (geometry != null && geometry['coordinates'] != null) {
+                final List<dynamic> coords = geometry['coordinates'];
+                final List<LatLng> points = coords.map((coord) {
+                  return LatLng(coord[1], coord[0]);
+                }).toList();
+
+                // Màu sắc khác nhau cho từng đoạn đường
+                Color segmentColor;
+                if (i == 0 && _currentPosition != null) {
+                  segmentColor = Colors.blue; // Từ vị trí hiện tại đến điểm đầu tiên
+                } else {
+                  segmentColor = Colors.green; // Giữa các điểm trong lịch trình
+                }
+
+                itineraryPolylines.add(
+                  Polyline(
+                    points: points,
+                    color: segmentColor,
+                    strokeWidth: 4.0,
+                  ),
+                );
+              }
+            }
+          }
+        } catch (e) {
+          print('❌ Lỗi vẽ đường đoạn ${i + 1}: $e');
+        }
+
+        // Delay nhỏ để tránh spam API
+        await Future.delayed(Duration(milliseconds: 200));
+      }
+
+      _polylines = itineraryPolylines;
+      print('✅ Đã vẽ ${itineraryPolylines.length} đoạn đường');
+      notifyListeners();
+
+    } catch (e) {
+      print('❌ Lỗi vẽ tuyến đường lịch trình: $e');
+    }
+  }
+
   // Khởi tạo MapController
   void onMapCreated() {
     _mapController ??= MapController();
+    _isMapControllerActive = true;
     notifyListeners();
   }
 
   // Chọn ngày
   void selectDate(DateTime date) {
     _selectedDate = date;
+    // Cập nhật markers để hiển thị địa điểm trong lịch trình ngày được chọn
+    _updateMarkers();
+    // Vẽ lại đường đi cho ngày được chọn
+    _drawItineraryRoute();
     notifyListeners();
   }
 
@@ -327,6 +472,16 @@ class MapViewModel extends ChangeNotifier {
       _dailyItineraries[dateKey] = [item];
     }
 
+    // Cập nhật markers
+    _updateMarkers();
+
+    // VẼ ĐƯỜNG NỐI CÁC ĐỊA ĐIỂM TRONG LỊCH TRÌNH
+    if (dateKey == DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day)) {
+      _drawItineraryRoute();
+    }
+
+    print('✅ Đã thêm ${attraction.name} vào lịch trình ngày ${date.day}/${date.month}');
+
     notifyListeners();
   }
 
@@ -343,6 +498,14 @@ class MapViewModel extends ChangeNotifier {
 
       if (_dailyItineraries[dateKey]!.isEmpty) {
         _dailyItineraries.remove(dateKey);
+      }
+
+      // Cập nhật markers
+      _updateMarkers();
+
+      // Vẽ lại đường đi
+      if (dateKey == DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day)) {
+        _drawItineraryRoute();
       }
 
       notifyListeners();
@@ -381,6 +544,12 @@ class MapViewModel extends ChangeNotifier {
       _dailyItineraries[newDateKey] = [newItem];
     }
 
+    // Cập nhật markers và vẽ lại đường
+    _updateMarkers();
+    if (newDateKey == DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day)) {
+      _drawItineraryRoute();
+    }
+
     notifyListeners();
   }
 
@@ -399,6 +568,9 @@ class MapViewModel extends ChangeNotifier {
     if (_dailyItineraries.containsKey(dateKey)) {
       final item = _dailyItineraries[dateKey]!.removeAt(oldIndex);
       _dailyItineraries[dateKey]!.insert(newIndex, item);
+
+      // Vẽ lại đường sau khi sắp xếp
+      _drawItineraryRoute();
 
       notifyListeners();
     }
@@ -421,15 +593,21 @@ class MapViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    await _getCurrentLocation();
+    await _getCurrentLocationAndSetInitial();
     _updateMarkers();
 
-    // Di chuyển bản đồ đến vị trí hiện tại
-    if (_currentPosition != null && _mapController != null) {
-      _mapController!.move(
-        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-        15.0,
-      );
+    // Di chuyển bản đồ đến vị trí hiện tại - THÊM KIỂM TRA
+    if (_currentPosition != null && _mapController != null && _isMapControllerActive) {
+      try {
+        _mapController!.move(
+          LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+          15.0,
+        );
+      } catch (e) {
+        print('❌ Lỗi khi di chuyển bản đồ: $e');
+        // Đặt lại controller vì nó không còn hợp lệ
+        _mapController = null;
+      }
     }
 
     _isLoading = false;

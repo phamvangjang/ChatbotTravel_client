@@ -173,47 +173,90 @@ class _MapTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Thông tin tin nhắn
-        if (viewModel.messageContent.isNotEmpty)
-          //Information from AI
+        // Thông tin vị trí hiện tại
+        if (viewModel.currentPosition != null)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            color: Colors.blue.shade50,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.all(8),
+            color: Colors.green.shade50,
+            child: Row(
               children: [
-                const Text(
-                  'Thông tin từ AI:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                const SizedBox(height: 4),
+                Icon(Icons.my_location, size: 16, color: Colors.green.shade600),
+                const SizedBox(width: 6),
                 Text(
-                  viewModel.messageContent,
-                  style: const TextStyle(fontSize: 12),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  'Vị trí hiện tại: ${viewModel.currentPosition!.latitude.toStringAsFixed(4)}, ${viewModel.currentPosition!.longitude.toStringAsFixed(4)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.green.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
           ),
 
-        // Địa điểm được phát hiện
+        // Địa điểm được phát hiện với chú thích màu sắc
         if (viewModel.detectedAttractions.isNotEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.only(
+              left: 12,
+              top: 0,
+              right: 12,
+              bottom: 10,
+            ),
             color: Colors.green.shade50,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Địa điểm được phát hiện (${viewModel.detectedAttractions.length}):',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Địa điểm được phát hiện (${viewModel.detectedAttractions.length}):',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const Spacer(),
+                    // THÊM: Button toggle route
+                    if (viewModel.todayItinerary.length >= 2)
+                      IconButton(
+                        onPressed: () {
+                          // Toggle hiển thị route
+                          if (viewModel.polylines.isNotEmpty) {
+                            viewModel.clearSelection();
+                          } else {
+                            // Vẽ lại route cho lịch trình hôm nay
+                            viewModel.selectDate(viewModel.selectedDate);
+                          }
+                        },
+                        icon: Icon(
+                          viewModel.polylines.isNotEmpty
+                              ? Icons.route_outlined
+                              : Icons.route,
+                          color: Colors.blue.shade600,
+                          size: 20,
+                        ),
+                        tooltip:
+                            viewModel.polylines.isNotEmpty
+                                ? 'Ẩn tuyến đường'
+                                : 'Hiện tuyến đường',
+                      ),
+                  ],
                 ),
+
+                // Chú thích màu sắc marker
+                Wrap(
+                  spacing: 12,
+                  children: [
+                    _buildLegendItem(Colors.blue, 'Vị trí hiện tại'),
+                    _buildLegendItem(Colors.red, 'Địa điểm'),
+                    _buildLegendItem(Colors.orange, 'Trong lịch trình'),
+                    _buildLegendItem(Colors.green, 'Đang chọn'),
+                  ],
+                ),
+
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 35,
@@ -224,12 +267,27 @@ class _MapTab extends StatelessWidget {
                       final attraction = viewModel.detectedAttractions[index];
                       final isSelected =
                           viewModel.selectedAttraction?.id == attraction.id;
+                      final isInItinerary = viewModel.todayItinerary.any(
+                        (item) => item.attraction.id == attraction.id,
+                      );
 
                       return Container(
                         margin: const EdgeInsets.only(right: 8),
                         child: GestureDetector(
                           onTap: () => viewModel.selectAttraction(attraction),
                           child: Chip(
+                            avatar: Icon(
+                              isInItinerary
+                                  ? Icons.schedule
+                                  : Icons.location_on,
+                              size: 16,
+                              color:
+                                  isSelected
+                                      ? Colors.white
+                                      : isInItinerary
+                                      ? Colors.orange.shade700
+                                      : Colors.red.shade700,
+                            ),
                             label: Text(
                               attraction.name,
                               style: TextStyle(
@@ -241,7 +299,9 @@ class _MapTab extends StatelessWidget {
                             backgroundColor:
                                 isSelected
                                     ? Colors.green.shade600
-                                    : Colors.green.shade100,
+                                    : isInItinerary
+                                    ? Colors.orange.shade100
+                                    : Colors.grey.shade100,
                           ),
                         ),
                       );
@@ -252,25 +312,115 @@ class _MapTab extends StatelessWidget {
             ),
           ),
 
+        // THÊM: Thông tin tuyến đường (nếu có)
+        if (viewModel.polylines.isNotEmpty &&
+            viewModel.todayItinerary.length >= 2)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(8),
+            color: Colors.blue.shade50,
+            child: Row(
+              children: [
+                Icon(Icons.route, size: 16, color: Colors.blue.shade600),
+                const SizedBox(width: 6),
+                Text(
+                  'Đang hiển thị tuyến đường cho ${viewModel.todayItinerary.length} địa điểm',
+                  style: TextStyle(fontSize: 12, color: Colors.blue.shade600),
+                ),
+                const Spacer(),
+                Text(
+                  '${viewModel.polylines.length} đoạn đường',
+                  style: TextStyle(fontSize: 11, color: Colors.blue.shade500),
+                ),
+              ],
+            ),
+          ),
+
         // Bản đồ Mapbox
         Expanded(
-          child: FlutterMap(
-            mapController: viewModel.mapController,
-            options: MapOptions(
-              center: viewModel.initialPosition,
-              zoom: 12.0,
-              onMapReady: () {
-                viewModel.onMapCreated();
-              },
-            ),
+          child: Stack(
             children: [
-              TileLayer(
-                urlTemplate:
-                    'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token={accessToken}',
-                additionalOptions: {'accessToken': viewModel.mapboxAccessToken},
+              FlutterMap(
+                mapController: viewModel.mapController,
+                options: MapOptions(
+                  center: viewModel.initialPosition,
+                  zoom: 12.0,
+                  onMapReady: () {
+                    viewModel.onMapCreated();
+                  },
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token={accessToken}',
+                    additionalOptions: {
+                      'accessToken': viewModel.mapboxAccessToken,
+                    },
+                  ),
+                  PolylineLayer(polylines: viewModel.polylines),
+                  MarkerLayer(markers: viewModel.markers),
+                ],
               ),
-              PolylineLayer(polylines: viewModel.polylines),
-              MarkerLayer(markers: viewModel.markers),
+
+              // THÊM: Loading overlay khi đang lấy vị trí
+              if (viewModel.isLoading)
+                Container(
+                  color: Colors.black26,
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: Colors.white),
+                        SizedBox(height: 16),
+                        Text(
+                          'Đang lấy vị trí hiện tại...',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // THÊM: Floating action buttons
+              Positioned(
+                right: 16,
+                bottom: 100,
+                child: Column(
+                  children: [
+                    // Button về vị trí hiện tại
+                    FloatingActionButton(
+                      mini: true,
+                      heroTag: "current_location",
+                      onPressed: () {
+                        viewModel.getCurrentLocation();
+                      },
+                      backgroundColor: Colors.blue.shade600,
+                      child: const Icon(Icons.my_location, color: Colors.white),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Button hiện/ẩn tuyến đường
+                    if (viewModel.todayItinerary.length >= 2)
+                      FloatingActionButton(
+                        mini: true,
+                        heroTag: "toggle_route",
+                        onPressed: () {
+                          if (viewModel.polylines.isNotEmpty) {
+                            viewModel.clearSelection();
+                          } else {
+                            viewModel.selectDate(viewModel.selectedDate);
+                          }
+                        },
+                        backgroundColor:
+                            viewModel.polylines.isNotEmpty
+                                ? Colors.green.shade600
+                                : Colors.grey.shade600,
+                        child: Icon(Icons.route, color: Colors.white),
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -296,6 +446,26 @@ class _MapTab extends StatelessWidget {
               onClose: () => viewModel.clearSelection(),
             ),
           ),
+      ],
+    );
+  }
+
+  // THÊM: Widget chú thích màu sắc
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 1),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 10)),
       ],
     );
   }
@@ -616,8 +786,7 @@ class _CalendarTab extends StatelessWidget {
     BuildContext context,
     Duration currentDuration,
     Function(Duration) onDurationSelected,
-  )
-  {
+  ) {
     showDialog(
       context: context,
       builder:
@@ -928,9 +1097,11 @@ class _TimelineTab extends StatelessWidget {
                             // Show confirmation dialog
                             await SaveItineraryDialog.show(
                               context,
-                              itinerary: viewModel.todayItinerary, // Dữ liệu từ Timeline
+                              itinerary: viewModel.todayItinerary,
+                              // Dữ liệu từ Timeline
                               selectedDate: viewModel.selectedDate,
-                              onSave: () => viewModel.saveItinerary(), // Chỉ lưu DB
+                              onSave:
+                                  () => viewModel.saveItinerary(), // Chỉ lưu DB
                             );
                           },
                   icon: const Icon(Icons.save),

@@ -1,7 +1,8 @@
 class ApiService {
-  static const String _baseUrl = "http://10.0.2.2:5000/api";
+  // static const String _baseUrl = "http://10.0.2.2:5000/api";
 
   // static const String _baseUrl = "http://192.168.215.197:5000/api";
+  static const String _baseUrl = "http://localhost:5000/api";
 
   //auth all done
   static String get loginUrl => "$_baseUrl/auth/login";
@@ -33,3 +34,13 @@ class ApiService {
 
   static String get chatbotVoiceUrl => "$_baseUrl/chatting/messages/voice";
 }
+/*
+# Kiểm tra thiết bị
+adb devices
+
+# Forward port
+adb reverse tcp:5000 tcp:5000
+
+# Kiểm tra
+adb reverse --list
+ */

@@ -26,7 +26,11 @@ class SaveItineraryDialog extends StatelessWidget {
         children: [
           Icon(Icons.save, color: Colors.green),
           SizedBox(width: 8),
-          Text('Xác nhận lưu lịch trình'),
+          Expanded(child: Text(
+            'Xác nhận lưu lịch trình',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 22, color: Colors.green),
+          ))
         ],
       ),
       content: Column(
@@ -76,7 +80,7 @@ class SaveItineraryDialog extends StatelessWidget {
                     Icon(MdiIcons.checkCircle, size: 12, color: Colors.green),
                     const SizedBox(width: 4),
                     const Text(
-                      'PDF có Material Design Icons đẹp',
+                      'Xuất lịch trình thành file PDF',
                       style: TextStyle(fontSize: 12, color: Colors.green),
                     ),
                   ],
