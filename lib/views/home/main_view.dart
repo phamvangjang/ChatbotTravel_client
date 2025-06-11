@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mobilev2/providers/user_provider.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/views/home/drawer_view.dart';
-import 'package:mobilev2/views/home/map_view.dart';
 import 'package:mobilev2/views/widgets/chat_input.dart';
 import 'package:provider/provider.dart';
-import '../../models/message_model.dart';
 import '../widgets/chat_bubble.dart';
 
 class MainView extends StatefulWidget {
@@ -32,227 +30,6 @@ class _MainViewState extends State<MainView> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-  }
-
-  // Kiểm tra xem tin nhắn có chứa thông tin địa điểm không
-  bool _containsLocationInfo(String message) {
-    final locationKeywords = [
-      'địa điểm',
-      'location',
-      'đi đến',
-      'visit',
-      'tham quan',
-      'du lịch',
-      'lịch trình',
-      'itinerary',
-      'bản đồ',
-      'map',
-      'tọa độ',
-      'coordinates',
-      'bến thành',
-      'nhà thờ đức bà',
-      'dinh độc lập',
-      'landmark',
-      'bitexco',
-    ];
-
-    final lowerMessage = message.toLowerCase();
-    return locationKeywords.any((keyword) => lowerMessage.contains(keyword));
-  }
-
-  // Hiển thị popup với các tùy chọn cho tin nhắn du lịch
-  void _showTravelOptionsPopup(BuildContext context, Message message) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder:
-          (context) => Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle bar
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-
-                // Header
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(Icons.travel_explore, color: Colors.blue.shade600),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Tùy chọn du lịch',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Options
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Icons.map, color: Colors.blue.shade600),
-                  ),
-                  title: const Text('Xem trên bản đồ'),
-                  subtitle: const Text('Hiển thị địa điểm và lịch trình'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _navigateToMapView(context, message);
-                  },
-                ),
-
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Icons.route, color: Colors.green.shade600),
-                  ),
-                  title: const Text('Lập lịch trình'),
-                  subtitle: const Text('Tạo kế hoạch chi tiết'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _createItinerary(context, message);
-                  },
-                ),
-
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-    );
-  }
-
-  // Chuyển đến MapView
-  void _navigateToMapView(BuildContext context, Message message) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => MapView(
-              messageContent: message.messageText,
-              conversationId: message.conversationId,
-            ),
-      ),
-    );
-  }
-
-  // Tạo lịch trình
-  void _createItinerary(BuildContext context, Message message) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Lập lịch trình'),
-            content: const Text(
-              'Tính năng lập lịch trình đang được phát triển.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Đóng'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _handleNewConversationTap(BuildContext context) {
-    final mainViewModel = context.read<MainViewModel>();
-
-    // Kiểm tra xem cuộc trò chuyện hiện tại có tin nhắn hay không
-    final currentMessages = mainViewModel.messages;
-    final hasMessages = currentMessages.isNotEmpty;
-
-    if (!hasMessages) {
-      // Nếu chưa có tin nhắn, hiển thị thông báo
-      _showEmptyConversationWarning(context);
-    } else {
-      // Nếu đã có tin nhắn, cho phép tạo cuộc trò chuyện mới
-      mainViewModel.createNewConversation();
-    }
-  }
-
-  void _showEmptyConversationWarning(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            icon: Icon(
-              Icons.info_outline,
-              color: Colors.orange.shade600,
-              size: 48,
-            ),
-            title: const Text(
-              'Cuộc trò chuyện trống',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Cuộc trò chuyện hiện tại chưa có tin nhắn nào.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Hãy gửi ít nhất một tin nhắn trước khi tạo cuộc trò chuyện mới.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext); // Đóng dialog
-                },
-                child: const Text('Đã hiểu'),
-              ),
-            ],
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-    );
   }
 
   @override
@@ -309,7 +86,7 @@ class _MainViewState extends State<MainView> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_note, color: Colors.grey),
-            onPressed: () => _handleNewConversationTap(context),
+            onPressed: () => context.read<MainViewModel>().handleNewConversationTap(context),
             tooltip: 'Cuộc trò chuyện mới',
           ),
           IconButton(
@@ -399,7 +176,7 @@ class _MainViewState extends State<MainView> {
                 onSendMessage: (message) {
                   viewModel.sendMessage(message);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _scrollToBottom();
+                    viewModel.scrollToBottom(_scrollController);
                   });
                 },
                 isEnabled: !viewModel.isSending,
@@ -519,7 +296,7 @@ class _MainViewState extends State<MainView> {
         final msg = viewModel.messages[index];
         final isUser = msg.sender.toLowerCase() == 'user';
         final messageContent = msg.messageText;
-        final hasLocationInfo = _containsLocationInfo(messageContent);
+        final hasLocationInfo = viewModel.containsLocationInfo(messageContent);
 
         return Column(
           crossAxisAlignment:
@@ -571,7 +348,7 @@ class _MainViewState extends State<MainView> {
                               // Nút xem bản đồ
                               ElevatedButton.icon(
                                 onPressed:
-                                    () => _navigateToMapView(context, msg),
+                                    () => viewModel.navigateToMapView(context, msg),
                                 icon: const Icon(Icons.map, size: 16),
                                 label: const Text('Bản đồ'),
                                 style: ElevatedButton.styleFrom(
@@ -592,7 +369,7 @@ class _MainViewState extends State<MainView> {
                               // Nút tùy chọn khác
                               OutlinedButton.icon(
                                 onPressed:
-                                    () => _showTravelOptionsPopup(context, msg),
+                                    () => viewModel.showTravelOptionsPopup(context, msg),
                                 icon: const Icon(Icons.more_horiz, size: 16),
                                 label: const Text('Thêm'),
                                 style: OutlinedButton.styleFrom(

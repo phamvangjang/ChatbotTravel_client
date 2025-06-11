@@ -170,7 +170,7 @@ class AttractionService{
 
       // Tìm kiếm trong dữ liệu mẫu
       String lowerQuery = query.toLowerCase();
-      List<Attraction> results = _sampleAttractions.where((attraction) {
+      List<Attraction> results = _attractionScape.hcmAttractions.where((attraction) {
         return attraction.name.toLowerCase().contains(lowerQuery) ||
             attraction.address.toLowerCase().contains(lowerQuery) ||
             attraction.description.toLowerCase().contains(lowerQuery) ||
@@ -203,7 +203,7 @@ class AttractionService{
 
       await Future.delayed(const Duration(milliseconds: 200));
 
-      return _sampleAttractions.firstWhere(
+      return _attractionScape.hcmAttractions.firstWhere(
             (attraction) => attraction.id == id,
         orElse: () => throw Exception('Không tìm thấy địa điểm'),
       );
@@ -222,7 +222,7 @@ class AttractionService{
     try {
       await Future.delayed(const Duration(milliseconds: 300));
 
-      List<Attraction> results = _sampleAttractions
+      List<Attraction> results = _attractionScape.hcmAttractions
           .where((attraction) => attraction.category == category)
           .toList();
 
@@ -245,7 +245,7 @@ class AttractionService{
   Future<List<Attraction>> getAllAttractions() async {
     try {
       await Future.delayed(const Duration(milliseconds: 200));
-      return List.from(_sampleAttractions);
+      return List.from(_attractionScape.hcmAttractions);
     } catch (e) {
       print('Lỗi khi lấy tất cả địa điểm: $e');
       return [];
@@ -256,34 +256,42 @@ class AttractionService{
   Future<List<Attraction>> detectAttractionsFromMessage(String message) async {
     try {
       await Future.delayed(const Duration(milliseconds: 300));
+      //print("ℹ️ detectAttractionsFromMessage with messages: ${message.toString()}");
 
-      String lowerMessage = message.toLowerCase();
+      String lowerMessage = message.toLowerCase().toString();
       List<Attraction> detectedAttractions = [];
 
-      for (Attraction attraction in _sampleAttractions) {
+      for (Attraction attraction in _attractionScape.hcmAttractions) {
         // Kiểm tra tên địa điểm
         if (lowerMessage.contains(attraction.name.toLowerCase())) {
           detectedAttractions.add(attraction);
+          print("ℹ️ get attraction name ${attraction.name}");
           continue;
         }
 
         // Kiểm tra các từ khóa trong tags
+        /*
         for (String tag in attraction.tags) {
           if (lowerMessage.contains(tag.toLowerCase())) {
             detectedAttractions.add(attraction);
+            print("ℹ️ get attraction tag ${attraction.tags}");
             break;
           }
         }
+         */
 
         // Kiểm tra danh mục
+        /*
         if (lowerMessage.contains(attraction.category.toLowerCase())) {
           detectedAttractions.add(attraction);
+          print("ℹ️ get attraction category ${attraction.category}");
         }
+         */
       }
 
       return detectedAttractions.toSet().toList(); // Loại bỏ trùng lặp
     } catch (e) {
-      print('Lỗi khi phát hiện địa điểm từ tin nhắn: $e');
+      print('ℹ️ Lỗi khi phát hiện địa điểm từ tin nhắn: $e');
       return [];
     }
   }

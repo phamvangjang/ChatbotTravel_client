@@ -14,6 +14,7 @@ class Attraction {
   final String? openingHours;
   final String? phoneNumber;
   final String? website;
+  final List<String> aliases;
 
   Attraction({
     required this.id,
@@ -29,6 +30,7 @@ class Attraction {
     this.openingHours,
     this.phoneNumber,
     this.website,
+    this.aliases = const[]
   });
 
   factory Attraction.fromJson(Map<String, dynamic> json) {
@@ -49,6 +51,7 @@ class Attraction {
       openingHours: json['openingHours'],
       phoneNumber: json['phoneNumber'],
       website: json['website'],
+      aliases: json['aliases']
     );
   }
 
@@ -68,6 +71,7 @@ class Attraction {
       'openingHours': openingHours,
       'phoneNumber': phoneNumber,
       'website': website,
+      'aliases': aliases
     };
   }
 
@@ -85,6 +89,7 @@ class Attraction {
     String? openingHours,
     String? phoneNumber,
     String? website,
+    List<String>? aliases
   }) {
     return Attraction(
       id: id ?? this.id,
@@ -100,6 +105,7 @@ class Attraction {
       openingHours: openingHours ?? this.openingHours,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       website: website ?? this.website,
+      aliases: aliases ?? this.aliases
     );
   }
 

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../models/attraction_model.dart';
 import '../../models/itinerary_item.dart';
 import '../../viewmodels/home/map_viewmodel.dart';
+import '../widgets/save_itinerary_dialog.dart';
 
 class MapView extends StatelessWidget {
   final String messageContent;
@@ -614,7 +616,8 @@ class _CalendarTab extends StatelessWidget {
     BuildContext context,
     Duration currentDuration,
     Function(Duration) onDurationSelected,
-  ) {
+  )
+  {
     showDialog(
       context: context,
       builder:
@@ -865,7 +868,7 @@ class _TimelineTab extends StatelessWidget {
                                             const Spacer(),
                                             if (item.attraction.price != null)
                                               Text(
-                                                '${item.attraction.price!.toInt()}đ',
+                                                '${NumberFormat('#,###', 'vi_VN').format(item.attraction.price)}đ',
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   color: Colors.green.shade600,
@@ -906,6 +909,7 @@ class _TimelineTab extends StatelessWidget {
                       viewModel.todayItinerary.isEmpty
                           ? null
                           : () async {
+                            /*
                             final success = await viewModel.saveItinerary();
                             if (!context.mounted) return;
 
@@ -919,6 +923,14 @@ class _TimelineTab extends StatelessWidget {
                                 backgroundColor:
                                     success ? Colors.green : Colors.red,
                               ),
+                            );
+                             */
+                            // Show confirmation dialog
+                            await SaveItineraryDialog.show(
+                              context,
+                              itinerary: viewModel.todayItinerary, // Dữ liệu từ Timeline
+                              selectedDate: viewModel.selectedDate,
+                              onSave: () => viewModel.saveItinerary(), // Chỉ lưu DB
                             );
                           },
                   icon: const Icon(Icons.save),

@@ -50,6 +50,10 @@ dependencies:
   flutter_map: ^4.0.0
   latlong2: ^0.8.2
   url_launcher: ^6.3.1
+  pdf: ^3.11.3
+  printing: ^5.14.2
+  google_fonts: ^4.0.4
+  material_design_icons_flutter: ^7.0.7296
 
 dev_dependencies:
   flutter_test:

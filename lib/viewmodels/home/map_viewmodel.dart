@@ -139,6 +139,7 @@ class MapViewModel extends ChangeNotifier {
       if (_messageContent.isNotEmpty) {
         _detectedAttractions = await _attractionService
             .detectAttractionsFromMessage(_messageContent);
+        print("ℹ️ _detectAttractionsFromMessage: get location from messages");
       } else {
         // Nếu không có tin nhắn, lấy địa điểm gần đó
         if (_currentPosition != null) {
@@ -149,8 +150,10 @@ class MapViewModel extends ChangeNotifier {
           _detectedAttractions = await _attractionService.getNearbyAttractions(
             currentLatLng,
           );
+          print("ℹ️ _detectAttractionsFromMessage: nothing messages get getNearbyAttractions");
         } else {
           // Lấy tất cả địa điểm
+          print("ℹ️ _detectAttractionsFromMessage: get all location");
           _detectedAttractions = await _attractionService.getAllAttractions();
         }
       }

@@ -4,6 +4,7 @@ import 'package:mobilev2/services/home/voice_service.dart';
 import 'package:record/record.dart';
 import '../../models/message_model.dart';
 import '../../services/home/chat_service.dart';
+import '../../views/home/map_view.dart';
 
 class MainViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
@@ -27,9 +28,7 @@ class MainViewModel extends ChangeNotifier {
   Conversation? get currentConversation => _currentConversation;
   bool get isLoading => _isLoading;
   bool get isSending => _isSending;
-  //bool get isRecording => _isRecording;
   bool get isRecording {
-    // print("Getter isRecording: $_isRecording");
     return _isRecording;
   }
   String? get error => _error;
@@ -389,6 +388,8 @@ class MainViewModel extends ChangeNotifier {
     }
   }
 
+
+
   // Helper methods
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -436,6 +437,223 @@ class MainViewModel extends ChangeNotifier {
   void sendAudioMessage() async {
     // Ghi âm hoặc chọn file âm thanh rồi gửi lên server
     print("sendAudioMessage");
+  }
+
+  // Kiểm tra xem tin nhắn có chứa thông tin địa điểm không
+  bool containsLocationInfo(String message) {
+    final locationKeywords = [
+      'địa điểm',
+      'location',
+      'đi đến',
+      'visit',
+      'tham quan',
+      'du lịch',
+      'lịch trình',
+      'itinerary',
+      'bản đồ',
+      'map',
+      'tọa độ',
+      'coordinates',
+      'bến thành',
+      'nhà thờ đức bà',
+      'dinh độc lập',
+      'landmark',
+      'bitexco',
+    ];
+
+    final lowerMessage = message.toLowerCase();
+    return locationKeywords.any((keyword) => lowerMessage.contains(keyword));
+  }
+
+  // Hiển thị popup với các tùy chọn cho tin nhắn du lịch
+  void showTravelOptionsPopup(BuildContext context, Message message) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(Icons.travel_explore, color: Colors.blue.shade600),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Tùy chọn du lịch',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Options
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.map, color: Colors.blue.shade600),
+              ),
+              title: const Text('Xem trên bản đồ'),
+              subtitle: const Text('Hiển thị địa điểm và lịch trình'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                navigateToMapView(context, message);
+              },
+            ),
+
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.route, color: Colors.green.shade600),
+              ),
+              title: const Text('Lập lịch trình'),
+              subtitle: const Text('Tạo kế hoạch chi tiết'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                createItinerary(context, message);
+              },
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Chuyển đến MapView
+  void navigateToMapView(BuildContext context, Message message) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapView(
+          messageContent: message.messageText,
+          conversationId: message.conversationId,
+        ),
+      ),
+    );
+  }
+
+  // Tạo lịch trình
+  void createItinerary(BuildContext context, Message message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Lập lịch trình'),
+        content: const Text(
+          'Tính năng lập lịch trình đang được phát triển.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Xử lý khi nhấn nút tạo cuộc trò chuyện mới
+  void handleNewConversationTap(BuildContext context) {
+    // Kiểm tra xem cuộc trò chuyện hiện tại có tin nhắn hay không
+    final hasMessages = _messages.isNotEmpty;
+
+    if (!hasMessages) {
+      // Nếu chưa có tin nhắn, hiển thị thông báo
+      showEmptyConversationWarning(context);
+    } else {
+      // Nếu đã có tin nhắn, cho phép tạo cuộc trò chuyện mới
+      createNewConversation();
+    }
+  }
+
+  // Hiển thị cảnh báo khi cuộc trò chuyện trống
+  void showEmptyConversationWarning(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(
+          Icons.info_outline,
+          color: Colors.orange.shade600,
+          size: 48,
+        ),
+        title: const Text(
+          'Cuộc trò chuyện trống',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Cuộc trò chuyện hiện tại chưa có tin nhắn nào.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Hãy gửi ít nhất một tin nhắn trước khi tạo cuộc trò chuyện mới.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext); // Đóng dialog
+            },
+            child: const Text('Đã hiểu'),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
+
+  // Cuộn xuống cuối danh sách tin nhắn
+  void scrollToBottom(ScrollController scrollController) {
+    if (scrollController.hasClients) {
+      scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override

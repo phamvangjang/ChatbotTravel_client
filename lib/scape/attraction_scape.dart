@@ -51,7 +51,8 @@ class AttractionScape {
 
     Attraction(
       id: '4',
-      name: 'Dinh Độc Lập',
+      name: 'Dinh Độc Lập(Dinh Thống Nhất)',
+      aliases: ['Dinh Độc Lập', 'Dinh Thống Nhất'],
       address: '135 Nam Kỳ Khởi Nghĩa, Phường Bến Thành, Quận 1, Hồ Chí Minh',
       description:
           'Dinh Độc Lập, còn được gọi là Dinh Thống Nhất, là một công trình kiến trúc lịch sử tại Thành phố Hồ Chí Minh.',
@@ -67,7 +68,7 @@ class AttractionScape {
 
     Attraction(
       id: '5',
-      name: 'Phố đi bộ Nguyễn Huệ',
+      name: 'đi bộ Nguyễn Huệ',
       address: 'Đường Nguyễn Huệ, Quận 1, Hồ Chí Minh',
       description:
           'Phố đi bộ Nguyễn Huệ là một không gian văn hóa, giải trí và mua sắm tại trung tâm Thành phố Hồ Chí Minh.',
@@ -477,17 +478,15 @@ class AttractionScape {
     // ==================== QUẬN 8 ====================
     Attraction(
       id: '32',
-      name: 'Chợ nổi Cái Răng (Tour từ Q8)',
-      address: 'Bến Bình Đông, Quận 8 (điểm khởi hành)',
-      description: 'Tour du lịch đến chợ nổi Cái Răng nổi tiếng miền Tây.',
-      imageUrl:
-          'https://dulichkhampha24.com/wp-content/uploads/2019/10/cho-noi-cai-rang.jpg',
+      name: 'Chợ hoa Bình Đông',
+      address: '1A Bình Đông, Phường 15, Quận 8, Thành phố Hồ Chí Minh',
+      description: 'Chợ hoa lớn nhất Sài Gòn với đa dạng các loại hoa tươi, cây cảnh và phụ kiện trang trí. Đây là nơi cung cấp hoa cho các cửa hàng hoa trong thành phố, mở cửa từ rất sớm và nhộn nhịp nhất vào buổi sáng.',
+      imageUrl: 'https://images.unsplash.com/photo-1563241527-3004b7be0ffd?w=800&h=600&fit=crop',
       rating: 4.4,
       location: LatLng(10.7333, 106.6833),
       category: 'cultural',
-      tags: ['chợ nổi', 'miền tây', 'văn hóa'],
-      openingHours: '5:00 - 9:00',
-      price: 300000,
+      tags: ['chợ', 'mua sắm', 'hoa tươi', 'cây cảnh', 'văn hóa'],
+      openingHours: '04:00 - 10:00',
     ),
 
     // ==================== QUẬN 10 ====================
@@ -998,7 +997,7 @@ class AttractionScape {
 
     Attraction(
       id: '68',
-      name: 'Cầu Mống Quận 4',
+      name: 'Cầu Mống',
       address: '33 Bến Vân Đồn, Phường 7, Quận 4, Hồ Chí Minh',
       description: 'Cây cầu này luôn thu hút đông đảo các bạn trẻ với nhiều hoạt động sôi nổi như chụp hình check-in, ngắm bình minh hay hoàng hôn vô cùng đẹp, hẹn hò lãng mạn hay thưởng thức những món ăn ở các gánh hàng rong.',
       imageUrl: 'assets/images/attractions/cau_mong.jpg',
