@@ -130,6 +130,9 @@ class SaveItineraryDialog extends StatelessWidget {
 
     try {
       await Future.delayed(const Duration(milliseconds: 200));
+      if(context.mounted){
+        Navigator.of(context).pop();
+      }
       final success = true;
 
       if (success) {

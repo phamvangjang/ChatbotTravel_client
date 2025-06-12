@@ -644,7 +644,7 @@ class _CalendarTab extends StatelessWidget {
                         ),
                         item: item,
                         index: index,
-                        onRemove: () => viewModel.removeFromItinerary(item),
+                        onRemove: () => _showRemoveItineraryDialog(context, viewModel, item),
                         onEdit:
                             () => _showEditItineraryDialog(
                               context,
@@ -779,6 +779,46 @@ class _CalendarTab extends StatelessWidget {
               );
             },
           ),
+    );
+  }
+
+  void _showRemoveItineraryDialog(
+      BuildContext context,
+      MapViewModel viewModel,
+      ItineraryItem item,
+      ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Xác nhận xóa'),
+          content: Text(
+            'Bạn có chắc muốn xóa lịch trình tại địa điểm "${item.attraction.name}" vào lúc ${TimeOfDay.fromDateTime(item.visitTime).format(context)} không?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrange,
+              ),
+              onPressed: () {
+                viewModel.removeFromItinerary(item);
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã xóa lịch trình'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              },
+              child: const Text('Xóa'),
+            ),
+          ],
+        );
+      },
     );
   }
 

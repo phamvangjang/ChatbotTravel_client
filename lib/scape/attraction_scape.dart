@@ -51,7 +51,7 @@ class AttractionScape {
 
     Attraction(
       id: '4',
-      name: 'Dinh Độc Lập(Dinh Thống Nhất)',
+      name: 'Dinh Thống Nhất',
       aliases: ['Dinh Độc Lập', 'Dinh Thống Nhất'],
       address: '135 Nam Kỳ Khởi Nghĩa, Phường Bến Thành, Quận 1, Hồ Chí Minh',
       description:
@@ -68,7 +68,7 @@ class AttractionScape {
 
     Attraction(
       id: '5',
-      name: 'đi bộ Nguyễn Huệ',
+      name: 'Nguyễn Huệ',
       address: 'Đường Nguyễn Huệ, Quận 1, Hồ Chí Minh',
       description:
           'Phố đi bộ Nguyễn Huệ là một không gian văn hóa, giải trí và mua sắm tại trung tâm Thành phố Hồ Chí Minh.',
@@ -1655,7 +1655,7 @@ class AttractionScape {
 
     Attraction(
       id: '115',
-      name: 'Khu du lịch Văn Thánh',
+      name: 'Văn Thánh',
       address: '48/10 Điện Biên Phủ, phường 22, quận Bình Thạnh, Hồ Chí Minh',
       description: 'Khu du lịch Văn Thánh nằm trong khuôn viên của bán đảo Thanh Đa, là nơi lý tưởng để bạn thư giãn cuối tuần, có đủ hồ bơi, sân tennis, view cafe đẹp tuyệt.',
       imageUrl: 'https://cdn.tgdd.vn/Files/2023/03/03/1514450/nhung-dia-diem-vui-choi-quan-binh-thanh-nhat-dinh-phai-den-202303030819571622.jpg',
