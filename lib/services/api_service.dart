@@ -31,5 +31,5 @@ adb reverse tcp:5000 tcp:5000
 
 # Kiểm tra
 adb reverse --list
-✅ ❌
+✅ ❌ ℹ️
  */

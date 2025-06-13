@@ -32,6 +32,7 @@ class _ChatBubbleState extends State<ChatBubble> {
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+  bool _audioInitialized = false;
 
   // Stream subscriptions for proper cleanup
   StreamSubscription? _durationSubscription;
@@ -41,35 +42,55 @@ class _ChatBubbleState extends State<ChatBubble> {
   @override
   void initState() {
     super.initState();
-    if (widget.messageType == 'voice' && widget.voiceUrl != null) {
-      _setupAudioPlayer();
+    _initializeAudioIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(ChatBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Check if the voice URL changed or message type changed
+    if (widget.voiceUrl != oldWidget.voiceUrl ||
+        widget.messageType != oldWidget.messageType) {
+      _initializeAudioIfNeeded();
     }
   }
 
   void _setupAudioPlayer() {
-    _audioPlayer.onDurationChanged.listen((duration) {
-      if(mounted){
+    // Cancel any existing subscriptions first
+    _durationSubscription?.cancel();
+    _positionSubscription?.cancel();
+    _playerStateSubscription?.cancel();
+
+    _durationSubscription = _audioPlayer.onDurationChanged.listen((duration) {
+      if (mounted) {
         setState(() {
           _duration = duration;
         });
       }
     });
 
-    _audioPlayer.onPositionChanged.listen((position) {
-      if(mounted){
+    _positionSubscription = _audioPlayer.onPositionChanged.listen((position) {
+      if (mounted) {
         setState(() {
           _position = position;
         });
       }
     });
 
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      if(mounted){
+    _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
         setState(() {
           _isPlaying = state == PlayerState.playing;
         });
       }
     });
+
+    // Pre-load the audio file
+    if (widget.voiceUrl != null && widget.voiceUrl!.isNotEmpty) {
+      _audioPlayer.setSourceUrl(widget.voiceUrl!).catchError((error) {
+        print('Error pre-loading audio: $error');
+      });
+    }
   }
 
   @override
@@ -85,19 +106,26 @@ class _ChatBubbleState extends State<ChatBubble> {
   }
 
   Future<void> _playPauseAudio() async {
-    if (widget.voiceUrl == null) return;
+    if (widget.voiceUrl == null || widget.voiceUrl!.isEmpty) {
+      print('Voice URL is null or empty');
+      return;
+    }
 
     try {
       if (_isPlaying) {
         await _audioPlayer.pause();
+        print('Audio paused');
       } else {
         // Check if the position is at the end, if so reset to beginning
         if (_position >= _duration && _duration.inMilliseconds > 0) {
           await _audioPlayer.seek(Duration.zero);
         }
+
+        print('Playing audio from: ${widget.voiceUrl}');
         await _audioPlayer.play(UrlSource(widget.voiceUrl!));
       }
     } catch (e) {
+      print('Error playing/pausing audio: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -107,6 +135,8 @@ class _ChatBubbleState extends State<ChatBubble> {
 
   @override
   Widget build(BuildContext context) {
+    // Debug print to check message type and voice URL
+    print('Building chat bubble: isUser=${widget.isUser}, messageType=${widget.messageType}, voiceUrl=${widget.voiceUrl}');
     return Container(
       margin: EdgeInsets.only(
         bottom: 8,
@@ -137,10 +167,10 @@ class _ChatBubbleState extends State<ChatBubble> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Hiển thị voice message nếu có
-                if (widget.messageType == 'voice' && widget.voiceUrl != null)
+                if (widget.messageType == 'voice' && widget.voiceUrl != null && widget.voiceUrl!.isNotEmpty)
                   _buildVoiceMessage(),
 
-                // Hiển thị text message
+                // Hiển thị text message với định dạng
                 if (widget.message.isNotEmpty)
                   Text(
                     widget.message,
@@ -210,7 +240,7 @@ class _ChatBubbleState extends State<ChatBubble> {
               decoration: BoxDecoration(
                 color:
                     widget.isUser
-                        ? Colors.white.withOpacity(0.2)
+                        ? const Color.fromARGB(51, 0, 0, 0)
                         : Colors.blue.shade100,
                 shape: BoxShape.circle,
               ),
@@ -237,7 +267,7 @@ class _ChatBubbleState extends State<ChatBubble> {
                           : 0.0,
                   backgroundColor:
                       widget.isUser
-                          ? Colors.white.withOpacity(0.3)
+                          ? const Color.fromARGB(77, 0, 0, 0)
                           : Colors.grey.shade300,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     widget.isUser ? Colors.white : Colors.blue.shade600,
@@ -253,7 +283,7 @@ class _ChatBubbleState extends State<ChatBubble> {
                     fontSize: 12,
                     color:
                         widget.isUser
-                            ? Colors.white.withOpacity(0.8)
+                            ? const Color.fromARGB(204,0,0,0)
                             : Colors.grey.shade600,
                   ),
                 ),
@@ -270,5 +300,14 @@ class _ChatBubbleState extends State<ChatBubble> {
     final minutes = twoDigits(position.inMinutes.remainder(60));
     final seconds = twoDigits(position.inSeconds.remainder(60));
     return '$minutes:$seconds';
+  }
+
+  void _initializeAudioIfNeeded() {
+    // Only initialize if it's a voice message and has a URL
+    if (widget.messageType == 'voice' && widget.voiceUrl != null && !_audioInitialized) {
+      print('Initializing audio player for: ${widget.voiceUrl}');
+      _setupAudioPlayer();
+      _audioInitialized = true;
+    }
   }
 }
