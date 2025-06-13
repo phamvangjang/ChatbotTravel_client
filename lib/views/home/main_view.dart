@@ -188,7 +188,7 @@ class _MainViewState extends State<MainView> {
     );
   }
 
-  // Method _buildMessagesList được định nghĩa ở đây
+  // Method _buildMessagesList
   Widget _buildMessagesList(MainViewModel viewModel) {
     if (viewModel.isLoading) {
       return const Center(
@@ -336,6 +336,7 @@ class _MainViewState extends State<MainView> {
                         showActions: !isUser,
                         messageType: msg.messageType ?? 'text',
                         voiceUrl: msg.voiceUrl,
+                        onCopyPressed: viewModel.copyMessageToClipboard,
                       ),
 
                       // Travel action buttons cho tin nhắn bot

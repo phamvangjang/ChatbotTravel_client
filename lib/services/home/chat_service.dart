@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:mobilev2/models/conversation_model.dart';
 import 'package:mobilev2/models/message_model.dart';
 import 'package:mobilev2/services/api_service.dart';
@@ -108,6 +110,66 @@ class ChatService {
       }
     } catch (e) {
       throw Exception('Lỗi gửi tin nhắn: $e');
+    }
+  }
+
+  // Gửi tin nhắn giọng nói và nhận phản hồi
+  Future<Map<String, dynamic>> sendVoiceMessageAndGetResponse({
+    required int conversationId,
+    required String sender,
+    required String audioFilePath,
+  }) async {
+    try {
+      // Tạo request multipart/form-data
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse(ApiService.sendVoiceMessagesUrl(conversationId, sender)),
+      );
+
+      // Thêm headers giống như trong curl command
+      request.headers['accept'] = 'application/json';
+
+      // Xác định loại file audio
+      final audioFile = File(audioFilePath);
+      final fileExtension = audioFilePath.split('.').last.toLowerCase();
+      final mimeType = fileExtension == 'wav' ? 'audio/wav' :
+      fileExtension == 'mp3' ? 'audio/mpeg' : 'audio/wav';
+
+      // Thêm file audio vào request với mime type chính xác
+      request.files.add(
+        http.MultipartFile(
+          'audio',  // Tên field phải là 'audio' như trong curl command
+          audioFile.readAsBytes().asStream(),
+          audioFile.lengthSync(),
+          filename: audioFile.path.split('/').last,
+          contentType: MediaType.parse(mimeType),
+        ),
+      );
+
+      print('Sending voice message to: ${request.url}');
+      print('File path: $audioFilePath');
+      print('File size: ${audioFile.lengthSync()} bytes');
+      print('MIME type: $mimeType');
+
+      // Gửi request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        // Kiểm tra status
+        if (responseData['status'] != 'success') {
+          throw Exception(responseData['message'] ?? 'Lỗi không xác định');
+        }
+
+        return responseData;
+      } else {
+        throw Exception('❌ Lỗi server: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Lỗi gửi tin nhắn giọng nói: $e');
+      throw Exception('Lỗi gửi tin nhắn giọng nói: $e');
     }
   }
 

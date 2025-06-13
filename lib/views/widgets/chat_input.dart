@@ -121,7 +121,7 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
               BoxShadow(
                 offset: const Offset(0, -2),
                 blurRadius: 8,
-                color: Colors.black.withOpacity(0.1),
+                color: const Color.fromARGB(25,0,0,0),
               ),
             ],
           ),

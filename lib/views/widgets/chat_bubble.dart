@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
@@ -8,6 +10,7 @@ class ChatBubble extends StatefulWidget {
   final Widget? extraAction;
   final String? voiceUrl;
   final String messageType;
+  final Function(String, BuildContext)? onCopyPressed;
 
   const ChatBubble({
     super.key,
@@ -17,6 +20,7 @@ class ChatBubble extends StatefulWidget {
     this.extraAction,
     this.voiceUrl,
     this.messageType = 'text',
+    this.onCopyPressed,
   });
 
   @override
@@ -29,6 +33,11 @@ class _ChatBubbleState extends State<ChatBubble> {
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
+  // Stream subscriptions for proper cleanup
+  StreamSubscription? _durationSubscription;
+  StreamSubscription? _positionSubscription;
+  StreamSubscription? _playerStateSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -39,26 +48,38 @@ class _ChatBubbleState extends State<ChatBubble> {
 
   void _setupAudioPlayer() {
     _audioPlayer.onDurationChanged.listen((duration) {
-      setState(() {
-        _duration = duration;
-      });
+      if(mounted){
+        setState(() {
+          _duration = duration;
+        });
+      }
     });
 
     _audioPlayer.onPositionChanged.listen((position) {
-      setState(() {
-        _position = position;
-      });
+      if(mounted){
+        setState(() {
+          _position = position;
+        });
+      }
     });
 
     _audioPlayer.onPlayerStateChanged.listen((state) {
-      setState(() {
-        _isPlaying = state == PlayerState.playing;
-      });
+      if(mounted){
+        setState(() {
+          _isPlaying = state == PlayerState.playing;
+        });
+      }
     });
   }
 
   @override
   void dispose() {
+    // Cancel all subscriptions
+    _durationSubscription?.cancel();
+    _positionSubscription?.cancel();
+    _playerStateSubscription?.cancel();
+
+    _audioPlayer.stop();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -70,6 +91,10 @@ class _ChatBubbleState extends State<ChatBubble> {
       if (_isPlaying) {
         await _audioPlayer.pause();
       } else {
+        // Check if the position is at the end, if so reset to beginning
+        if (_position >= _duration && _duration.inMilliseconds > 0) {
+          await _audioPlayer.seek(Duration.zero);
+        }
         await _audioPlayer.play(UrlSource(widget.voiceUrl!));
       }
     } catch (e) {
@@ -140,6 +165,9 @@ class _ChatBubbleState extends State<ChatBubble> {
                     icon: const Icon(Icons.copy, size: 16, color: Colors.grey),
                     onPressed: () {
                       // Implement copy functionality
+                      if (widget.onCopyPressed != null) {
+                        widget.onCopyPressed!(widget.message, context);
+                      }
                     },
                     tooltip: 'Sao chép',
                   ),

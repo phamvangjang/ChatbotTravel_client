@@ -1,13 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
 class VoiceService{
-  static const String baseUrl = 'YOUR_API_BASE_URL';
   final AudioRecorder _audioRecorder = AudioRecorder();
 
   // Kiểm tra và yêu cầu quyền microphone
@@ -21,15 +18,15 @@ class VoiceService{
     try {
       final hasPermission = await requestMicrophonePermission();
       if (!hasPermission) {
-        throw Exception('Không có quyền truy cập microphone');
+        throw Exception('❌ Không có quyền truy cập microphone');
       }
 
       final directory = await getTemporaryDirectory();
-      final filePath = '${directory.path}/voice_message_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final filePath = '${directory.path}/voice_message_${DateTime.now().millisecondsSinceEpoch}.wav';
 
       await _audioRecorder.start(
         const RecordConfig(
-          encoder: AudioEncoder.aacLc,
+          encoder: AudioEncoder.wav,
           bitRate: 128000,
           sampleRate: 44100,
         ),
@@ -38,7 +35,7 @@ class VoiceService{
 
       return true;
     } catch (e) {
-      throw Exception('Lỗi bắt đầu ghi âm: $e');
+      throw Exception('❌ Lỗi bắt đầu ghi âm: $e');
     }
   }
 
@@ -48,7 +45,7 @@ class VoiceService{
       final path = await _audioRecorder.stop();
       return path;
     } catch (e) {
-      throw Exception('Lỗi dừng ghi âm: $e');
+      throw Exception('❌ Lỗi dừng ghi âm: $e');
     }
   }
 
@@ -57,7 +54,7 @@ class VoiceService{
     try {
       await _audioRecorder.cancel();
     } catch (e) {
-      throw Exception('Lỗi hủy ghi âm: $e');
+      throw Exception('❌ Lỗi hủy ghi âm: $e');
     }
   }
 
@@ -71,42 +68,6 @@ class VoiceService{
     return _audioRecorder.onAmplitudeChanged(const Duration(milliseconds: 200));
   }
 
-  // Upload file âm thanh và chuyển đổi thành text
-  Future<Map<String, dynamic>> uploadVoiceAndConvertToText(String filePath) async {
-    try {
-      final file = File(filePath);
-      if (!file.existsSync()) {
-        throw Exception('File âm thanh không tồn tại');
-      }
-
-      //fix
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$baseUrl/voice/speech-to-text'),
-      );
-
-      request.files.add(
-        await http.MultipartFile.fromPath('audio', filePath),
-      );
-
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-
-      if (response.statusCode == 200) {
-        final result = jsonDecode(responseBody);
-        return {
-          'text': result['text'] ?? '',
-          'voice_url': result['voice_url'] ?? '',
-          'confidence': result['confidence'] ?? 0.0,
-        };
-      } else {
-        throw Exception('Lỗi chuyển đổi giọng nói: $responseBody');
-      }
-    } catch (e) {
-      throw Exception('Lỗi upload file âm thanh: $e');
-    }
-  }
-
   // Xóa file tạm
   Future<void> deleteTemporaryFile(String filePath) async {
     try {
@@ -116,7 +77,7 @@ class VoiceService{
       }
     } catch (e) {
       // Log error nhưng không throw exception
-      print('Lỗi xóa file tạm: $e');
+      print('❌ Lỗi xóa file tạm: $e');
     }
   }
 

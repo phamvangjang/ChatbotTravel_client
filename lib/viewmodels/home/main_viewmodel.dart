@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobilev2/models/conversation_model.dart';
 import 'package:mobilev2/services/home/voice_service.dart';
 import 'package:record/record.dart';
@@ -9,6 +10,7 @@ import '../../views/home/map_view.dart';
 class MainViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
   final VoiceService _voiceService = VoiceService();
+  final ScrollController _scrollController = ScrollController();
   int? _currentUserId;
 
   // State variables
@@ -190,6 +192,7 @@ class MainViewModel extends ChangeNotifier {
       print("Error loading conversation $conversationId: $e");
       _setError(e.toString());
 
+      scrollToBottom(_scrollController);
       // Nếu không tải được conversation, tạo mới
       await createNewConversation();
     } finally {
@@ -297,22 +300,16 @@ class MainViewModel extends ChangeNotifier {
         throw Exception('Không thể lưu file ghi âm');
       }
 
-      // Upload và chuyển đổi giọng nói thành text
-      final voiceResult = await _voiceService.uploadVoiceAndConvertToText(filePath);
-      final transcribedText = voiceResult['text'] as String;
-      final voiceUrl = voiceResult['voice_url'] as String;
-
-      if (transcribedText.isEmpty) {
-        throw Exception('Không thể nhận diện giọng nói. Vui lòng thử lại.');
+      // Kiểm tra cuộc trò chuyện hiện tại
+      if (_currentConversation == null) {
+        throw Exception('Không có cuộc trò chuyện hiện tại');
       }
 
-      // Lưu tin nhắn giọng nói của user
-      final response = await _chatService.sendMessageAndGetResponse(
+      // Gửi tin nhắn giọng nói đến API
+      final response = await _chatService.sendVoiceMessageAndGetResponse(
         conversationId: _currentConversation!.conversationId,
         sender: 'user',
-        messageText: transcribedText,
-        messageType: 'voice',
-        voiceUrl: voiceUrl,
+        audioFilePath: filePath,
       );
 
       // Parse response data
@@ -333,7 +330,6 @@ class MainViewModel extends ChangeNotifier {
 
       // Xóa file tạm
       await _voiceService.deleteTemporaryFile(filePath);
-
     } catch (e) {
       _setError(e.toString());
       _isRecording = false;
@@ -387,8 +383,6 @@ class MainViewModel extends ChangeNotifier {
       await loadConversation(_currentConversation!.conversationId);
     }
   }
-
-
 
   // Helper methods
   void _setLoading(bool loading) {
@@ -653,6 +647,48 @@ class MainViewModel extends ChangeNotifier {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
+    }
+  }
+
+  // Phương thức sao chép tin nhắn vào clipboard
+  Future<void> copyMessageToClipboard(String message, BuildContext context) async {
+    try {
+      // Sao chép văn bản vào clipboard
+      await Clipboard.setData(ClipboardData(text: message));
+
+      // Hiển thị thông báo thành công
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+                const Text('Đã sao chép tin nhắn'),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Xử lý lỗi nếu có
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi sao chép: $e'),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      print('Lỗi sao chép tin nhắn: $e');
     }
   }
 
