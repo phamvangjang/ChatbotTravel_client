@@ -233,10 +233,21 @@ class MapViewModel extends ChangeNotifier {
       );
     }
 
+    // Lấy danh sách các địa điểm trong lịch trình của ngày hôm nay
+    final itineraryItems = todayItinerary;
+    final itineraryAttractionIds = itineraryItems.map((item) => item.attraction.id).toSet();
+
+    // Tạo map để lưu trữ thứ tự của các địa điểm trong lịch trình
+    final Map<String, int> attractionOrder = {};
+    for (int i = 0; i < itineraryItems.length; i++) {
+      attractionOrder[itineraryItems[i].attraction.id] = i + 1;
+    }
+
     // Thêm markers cho các địa điểm
     for (var attraction in _detectedAttractions) {
       final isSelected = _selectedAttraction?.id == attraction.id;
-      final isInItinerary = _isAttractionInTodayItinerary(attraction);
+      final isInItinerary = itineraryAttractionIds.contains(attraction.id);
+      final orderNumber = isInItinerary ? attractionOrder[attraction.id] : null;
 
       _markers.add(
         Marker(
@@ -255,10 +266,97 @@ class MapViewModel extends ChangeNotifier {
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
               ),
-              child: Icon(
-                isInItinerary ? Icons.schedule : Icons.location_on,
+              child: isInItinerary
+                  ? Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    Icons.schedule,
+                    color: Colors.white,
+                    size: isSelected ? 20 : 16,
+                  ),
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$orderNumber',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+                  : Icon(
+                Icons.location_on,
                 color: Colors.white,
                 size: isSelected ? 24 : 20,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Thêm markers cho các địa điểm trong lịch trình mà không có trong kết quả tìm kiếm
+    final searchAttractionIds = _detectedAttractions.map((a) => a.id).toSet();
+    for (var item in itineraryItems) {
+      // Nếu địa điểm đã có trong kết quả tìm kiếm thì bỏ qua
+      if (searchAttractionIds.contains(item.attraction.id)) continue;
+
+      final isSelected = _selectedAttraction?.id == item.attraction.id;
+      final orderNumber = attractionOrder[item.attraction.id];
+
+      _markers.add(
+        Marker(
+          point: item.attraction.location,
+          width: 40,
+          height: 40,
+          builder: (context) => GestureDetector(
+            onTap: () => selectAttraction(item.attraction),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.green : Colors.orange,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    Icons.schedule,
+                    color: Colors.white,
+                    size: isSelected ? 20 : 16,
+                  ),
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$orderNumber',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -628,10 +726,31 @@ class MapViewModel extends ChangeNotifier {
         );
       }
 
+      /*
       _detectedAttractions = await _attractionService.searchAttractions(
         query,
         currentLocation: currentLocation,
       );
+      _updateMarkers();
+       */
+      // Get the search results
+      List<Attraction> searchResults = await _attractionService.searchAttractions(
+        query,
+        currentLocation: currentLocation,
+      );
+
+      // Create a map of attraction IDs that are in the itinerary across all dates
+      final Set<String> attractionsInItinerary = {};
+      _dailyItineraries.forEach((date, items) {
+        for (var item in items) {
+          attractionsInItinerary.add(item.attraction.id);
+        }
+      });
+
+      // Update the attractions list with search results
+      _detectedAttractions = searchResults;
+
+      // Update markers while preserving itinerary state
       _updateMarkers();
 
       _isLoading = false;

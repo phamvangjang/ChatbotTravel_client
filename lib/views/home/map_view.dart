@@ -451,7 +451,7 @@ class _MapTab extends StatelessWidget {
   }
 
   // Widget chú thích màu sắc
-  Widget _buildLegendItem(Color color, String label) {
+  Widget _buildLegendItem(Color color, String label, {bool showNumber = false}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -463,6 +463,16 @@ class _MapTab extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white, width: 1),
           ),
+          child: showNumber ? Center(
+            child: Text(
+              "1",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ) : null,
         ),
         const SizedBox(width: 4),
         Text(label, style: const TextStyle(fontSize: 10)),
