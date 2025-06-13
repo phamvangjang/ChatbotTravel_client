@@ -219,7 +219,7 @@ class _MapTab extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    // THÊM: Button toggle route
+                    // Button toggle route
                     if (viewModel.todayItinerary.length >= 2)
                       IconButton(
                         onPressed: () {
@@ -312,7 +312,7 @@ class _MapTab extends StatelessWidget {
             ),
           ),
 
-        // THÊM: Thông tin tuyến đường (nếu có)
+        // Thông tin tuyến đường (nếu có)
         if (viewModel.polylines.isNotEmpty &&
             viewModel.todayItinerary.length >= 2)
           Container(
@@ -362,7 +362,7 @@ class _MapTab extends StatelessWidget {
                 ],
               ),
 
-              // THÊM: Loading overlay khi đang lấy vị trí
+              // Loading overlay khi đang lấy vị trí
               if (viewModel.isLoading)
                 Container(
                   color: Colors.black26,
@@ -381,7 +381,7 @@ class _MapTab extends StatelessWidget {
                   ),
                 ),
 
-              // THÊM: Floating action buttons
+              // Floating action buttons
               Positioned(
                 right: 16,
                 bottom: 100,
@@ -450,7 +450,7 @@ class _MapTab extends StatelessWidget {
     );
   }
 
-  // THÊM: Widget chú thích màu sắc
+  // Widget chú thích màu sắc
   Widget _buildLegendItem(Color color, String label) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -1226,7 +1226,7 @@ class _AttractionInfoCard extends StatelessWidget {
                   if (attraction.price != null) ...[
                     const SizedBox(width: 8),
                     Text(
-                      '${attraction.price!.toInt()}đ',
+                      '${NumberFormat('#,###', 'vi_VN').format(attraction.price)}đ',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.green.shade600,

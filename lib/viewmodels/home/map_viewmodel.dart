@@ -21,10 +21,10 @@ class MapViewModel extends ChangeNotifier {
   final String mapboxAccessToken = dotenv.env["MAPBOX_ACCESS_TOKEN"]!;
 
   // Mapbox style URL
-  final String mapboxStyleUrl = dotenv.env["MAPBOX_STYLE_URL"]!;
+  final String mapboxStyleUrl = dotenv.env["MAPBOX_STYLE_URL_V2"]!;
 
   // Mapbox directions API URL
-  final String directionsApiUrl = dotenv.env["DIRECTIONS_API_URL"]!;
+  final String directionsApiUrl = dotenv.env["DIRECTIONS_API_URL_V2"]!;
 
   // Trạng thái
   bool _isLoading = true;
@@ -596,7 +596,7 @@ class MapViewModel extends ChangeNotifier {
     await _getCurrentLocationAndSetInitial();
     _updateMarkers();
 
-    // Di chuyển bản đồ đến vị trí hiện tại - THÊM KIỂM TRA
+    // Di chuyển bản đồ đến vị trí hiện tại
     if (_currentPosition != null && _mapController != null && _isMapControllerActive) {
       try {
         _mapController!.move(

@@ -122,7 +122,7 @@ class AttractionService{
   /// Lấy danh sách địa điểm gần vị trí hiện tại
   Future<List<Attraction>> getNearbyAttractions(
       LatLng currentLocation, {
-        double radiusInKm = 10.0,
+        double radiusInKm = 20.0,
         int limit = 20,
       }) async {
     try {
