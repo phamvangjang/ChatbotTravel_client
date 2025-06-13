@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../../helpers/hcm_map_helper.dart';
 import '../../models/itinerary_item.dart';
 
 class SaveItineraryDialog extends StatelessWidget {
@@ -85,6 +88,16 @@ class SaveItineraryDialog extends StatelessWidget {
                     ),
                   ],
                 ),
+                Row(
+                  children: [
+                    Icon(MdiIcons.checkCircle, size: 12, color: Colors.green),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'Bao gồm bản đồ Hồ Chí Minh',
+                      style: TextStyle(fontSize: 12, color: Colors.green),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -148,20 +161,20 @@ class SaveItineraryDialog extends StatelessWidget {
                     children: [
                       CircularProgressIndicator(),
                       SizedBox(height: 16),
-                      Text('Đang tạo PDF với Material Design Icons...'),
+                      Text('Đang tạo PDF với bản đồ Hồ Chí Minh...'),
                     ],
                   ),
                 ),
           );
         }
 
-        await _generatePDFWithMDIIcons();
+        await _generateEnhancedPDF();
 
         if (context.mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ Lịch trình đã lưu và PDF có icon đã tải về'),
+              content: Text('✅ Lịch trình đã lưu và PDF đã tải về'),
               backgroundColor: Colors.green,
               duration: Duration(seconds: 3),
             ),
@@ -191,11 +204,12 @@ class SaveItineraryDialog extends StatelessWidget {
     }
   }
 
-  Future<void> _generatePDFWithMDIIcons() async {
+  Future<void> _generateEnhancedPDF() async {
     try {
       // Load fonts
       final fontRegular = await PdfGoogleFonts.robotoRegular();
       final fontBold = await PdfGoogleFonts.robotoBold();
+      final fontItalic = await PdfGoogleFonts.robotoItalic();
 
       // Load Material Design Icons font từ package
       pw.Font? iconFont;
@@ -208,6 +222,9 @@ class SaveItineraryDialog extends StatelessWidget {
         print('Could not load MDI font: $e');
       }
 
+      // Tạo bản đồ tĩnh
+      final mapImage = await _generateMapImage();
+
       final pdf = pw.Document();
 
       pdf.addPage(
@@ -216,102 +233,336 @@ class SaveItineraryDialog extends StatelessWidget {
           margin: const pw.EdgeInsets.all(20),
           build: (pw.Context context) {
             return [
-              // Header với icon
-              pw.Container(
-                width: double.infinity,
-                padding: const pw.EdgeInsets.all(20),
-                decoration: pw.BoxDecoration(
-                  color: PdfColors.blue100,
-                  borderRadius: pw.BorderRadius.circular(10),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+              // Trang đầu tiên với layout 2 cột
+              pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  // Cột bên trái - Lịch trình chi tiết
+                  pw.Expanded(
+                    flex: 3,
+                    child: pw.Container(
+                      padding: const pw.EdgeInsets.all(15),
+                      decoration: pw.BoxDecoration(
+                        color: PdfColors.teal700,
+                        borderRadius: pw.BorderRadius.circular(10),
+                      ),
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          // Tiêu đề lịch trình
+                          pw.Text(
+                            'Hồ Chí Minh - ngày ${selectedDate.day}',
+                            style: pw.TextStyle(
+                              font: fontBold,
+                              fontSize: 24,
+                              color: PdfColors.white,
+                            ),
+                          ),
+                          pw.SizedBox(height: 20),
+
+                          // Timeline lịch trình
+                          ...itinerary.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final item = entry.value;
+                            final isLast = index == itinerary.length - 1;
+
+                            return pw.Column(
+                              children: [
+                                pw.Row(
+                                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                  children: [
+                                    // Cột thời gian
+                                    pw.Container(
+                                      width: 50,
+                                      child: pw.Text(
+                                        '${item.visitTime.hour.toString().padLeft(2, '0')}:${item.visitTime.minute.toString().padLeft(2, '0')}',
+                                        style: pw.TextStyle(
+                                          font: fontBold,
+                                          fontSize: 14,
+                                          color: PdfColors.white,
+                                        ),
+                                      ),
+                                    ),
+
+                                    // Cột timeline
+                                    pw.Container(
+                                      width: 20,
+                                      child: pw.Column(
+                                        children: [
+                                          pw.Container(
+                                            width: 12,
+                                            height: 12,
+                                            decoration: pw.BoxDecoration(
+                                              color: PdfColors.white,
+                                              shape: pw.BoxShape.circle,
+                                            ),
+                                          ),
+                                          if (!isLast)
+                                            pw.Container(
+                                              width: 2,
+                                              height: 60,
+                                              color: PdfColors.white,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    // Cột nội dung
+                                    pw.Expanded(
+                                      child: pw.Column(
+                                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                        children: [
+                                          pw.Text(
+                                            item.attraction.name,
+                                            style: pw.TextStyle(
+                                              font: fontBold,
+                                              fontSize: 16,
+                                              color: PdfColors.white,
+                                            ),
+                                          ),
+                                          pw.SizedBox(height: 4),
+                                          pw.Text(
+                                            'Thời gian tham quan: ${_formatDuration(item.estimatedDuration)}',
+                                            style: pw.TextStyle(
+                                              font: fontRegular,
+                                              fontSize: 12,
+                                              color: PdfColors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                pw.SizedBox(height: isLast ? 0 : 10),
+                              ],
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  pw.SizedBox(width: 15),
+
+                  // Cột bên phải - Bản đồ và thông tin tổng quan
+                  pw.Expanded(
+                    flex: 2,
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        // Tiêu đề và ngày
+                        pw.Container(
+                          padding: const pw.EdgeInsets.all(15),
+                          decoration: pw.BoxDecoration(
+                            color: PdfColors.blue600,
+                            borderRadius: pw.BorderRadius.circular(10),
+                          ),
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.center,
+                            children: [
+                              pw.Text(
+                                'Lịch trình du lịch',
+                                style: pw.TextStyle(
+                                  font: fontBold,
+                                  fontSize: 20,
+                                  color: PdfColors.white,
+                                ),
+                                textAlign: pw.TextAlign.center,
+                              ),
+                              pw.SizedBox(height: 8),
+                              pw.Text(
+                                '${selectedDate.day} THÁNG ${selectedDate.month} ${selectedDate.year}',
+                                style: pw.TextStyle(
+                                  font: fontRegular,
+                                  fontSize: 14,
+                                  color: PdfColors.white,
+                                ),
+                                textAlign: pw.TextAlign.center,
+                              ),
+                              pw.SizedBox(height: 4),
+                              pw.Text(
+                                '${itinerary.length} ĐỊA ĐIỂM',
+                                style: pw.TextStyle(
+                                  font: fontBold,
+                                  fontSize: 12,
+                                  color: PdfColors.white,
+                                ),
+                                textAlign: pw.TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        pw.SizedBox(height: 15),
+
+                        // Bản đồ Hồ Chí Minh
+                        if (mapImage != null)
+                          pw.Container(
+                            decoration: pw.BoxDecoration(
+                              border: pw.Border.all(color: PdfColors.grey300),
+                              borderRadius: pw.BorderRadius.circular(10),
+                            ),
+                            child: pw.ClipRRect(
+                              horizontalRadius: 10,
+                              verticalRadius: 10,
+                              child: pw.Image(mapImage as pw.ImageProvider),
+                            ),
+                          ),
+
+                        pw.SizedBox(height: 15),
+
+                        // Thông tin tổng quan
+                        pw.Container(
+                          padding: const pw.EdgeInsets.all(15),
+                          decoration: pw.BoxDecoration(
+                            color: PdfColors.grey100,
+                            borderRadius: pw.BorderRadius.circular(10),
+                            border: pw.Border.all(color: PdfColors.grey300),
+                          ),
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Row(
+                                children: [
+                                  _buildMDIIcon(
+                                    iconFont,
+                                    MdiIcons.informationOutline,
+                                    PdfColors.blue800,
+                                    18,
+                                  ),
+                                  pw.SizedBox(width: 8),
+                                  pw.Text(
+                                    'THÔNG TIN CHUYẾN ĐI',
+                                    style: pw.TextStyle(
+                                      font: fontBold,
+                                      fontSize: 14,
+                                      color: PdfColors.blue800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              pw.SizedBox(height: 10),
+
+                              pw.Row(
+                                children: [
+                                  _buildMDIIcon(
+                                    iconFont,
+                                    MdiIcons.clockOutline,
+                                    PdfColors.blue600,
+                                    14,
+                                  ),
+                                  pw.SizedBox(width: 6),
+                                  pw.Text(
+                                    'Bắt đầu: ${_getStartTime()}',
+                                    style: pw.TextStyle(
+                                      font: fontRegular,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              pw.SizedBox(height: 4),
+                              pw.Row(
+                                children: [
+                                  _buildMDIIcon(
+                                    iconFont,
+                                    MdiIcons.clockOutline,
+                                    PdfColors.blue600,
+                                    14,
+                                  ),
+                                  pw.SizedBox(width: 6),
+                                  pw.Text(
+                                    'Kết thúc: ${_getEndTime()}',
+                                    style: pw.TextStyle(
+                                      font: fontRegular,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              pw.SizedBox(height: 4),
+                              pw.Row(
+                                children: [
+                                  _buildMDIIcon(
+                                    iconFont,
+                                    MdiIcons.timerOutline,
+                                    PdfColors.blue600,
+                                    14,
+                                  ),
+                                  pw.SizedBox(width: 6),
+                                  pw.Text(
+                                    'Tổng thời gian: ${_getTotalDuration()}',
+                                    style: pw.TextStyle(
+                                      font: fontRegular,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              if (_getTotalPrice() > 0) ...[
+                                pw.SizedBox(height: 4),
+                                pw.Row(
+                                  children: [
+                                    _buildMDIIcon(
+                                      iconFont,
+                                      MdiIcons.currencyUsd,
+                                      PdfColors.green600,
+                                      14,
+                                    ),
+                                    pw.SizedBox(width: 6),
+                                    pw.Text(
+                                      'Chi phí: ${_formatPrice(_getTotalPrice())} VND',
+                                      style: pw.TextStyle(
+                                        font: fontBold,
+                                        fontSize: 12,
+                                        color: PdfColors.green600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              pw.SizedBox(height: 30),
+
+              // Trang thứ hai - Chi tiết các địa điểm
+              pw.Header(
+                level: 1,
+                child: pw.Row(
                   children: [
-                    pw.Row(
-                      children: [
-                        _buildMDIIcon(
-                          iconFont,
-                          MdiIcons.mapMarkerRadius,
-                          PdfColors.blue800,
-                          24,
-                        ),
-                        pw.SizedBox(width: 10),
-                        pw.Text(
-                          'LỊCH TRÌNH DU LỊCH',
-                          style: pw.TextStyle(
-                            font: fontBold,
-                            fontSize: 24,
-                            color: PdfColors.blue800,
-                          ),
-                        ),
-                      ],
+                    _buildMDIIcon(
+                      iconFont,
+                      MdiIcons.mapMarkerRadius,
+                      PdfColors.blue800,
+                      20,
                     ),
-                    pw.SizedBox(height: 12),
-                    pw.Row(
-                      children: [
-                        _buildMDIIcon(
-                          iconFont,
-                          MdiIcons.calendar,
-                          PdfColors.blue600,
-                          16,
-                        ),
-                        pw.SizedBox(width: 6),
-                        pw.Text(
-                          'Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                          style: pw.TextStyle(
-                            font: fontRegular,
-                            fontSize: 16,
-                            color: PdfColors.blue600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    pw.SizedBox(height: 4),
-                    pw.Row(
-                      children: [
-                        _buildMDIIcon(
-                          iconFont,
-                          MdiIcons.mapMarker,
-                          PdfColors.blue600,
-                          16,
-                        ),
-                        pw.SizedBox(width: 6),
-                        pw.Text(
-                          'Tổng số địa điểm: ${itinerary.length}',
-                          style: pw.TextStyle(
-                            font: fontRegular,
-                            fontSize: 14,
-                            color: PdfColors.blue600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    pw.Row(
-                      children: [
-                        _buildMDIIcon(
-                          iconFont,
-                          MdiIcons.clockOutline,
-                          PdfColors.blue600,
-                          16,
-                        ),
-                        pw.SizedBox(width: 6),
-                        pw.Text(
-                          'Thời gian: ${_getStartTime()} - ${_getEndTime()}',
-                          style: pw.TextStyle(
-                            font: fontRegular,
-                            fontSize: 14,
-                            color: PdfColors.blue600,
-                          ),
-                        ),
-                      ],
+                    pw.SizedBox(width: 8),
+                    pw.Text(
+                      'CHI TIẾT CÁC ĐỊA ĐIỂM',
+                      style: pw.TextStyle(
+                        font: fontBold,
+                        fontSize: 18,
+                        color: PdfColors.blue800,
+                      ),
                     ),
                   ],
                 ),
               ),
 
-              pw.SizedBox(height: 20),
+              pw.SizedBox(height: 10),
 
-              // Danh sách địa điểm với MDI icons
+              // Danh sách địa điểm chi tiết
               ...itinerary.asMap().entries.map((entry) {
                 final index = entry.key;
                 final item = entry.value;
@@ -443,7 +694,7 @@ class SaveItineraryDialog extends StatelessWidget {
                               child: pw.Text(
                                 item.notes,
                                 style: pw.TextStyle(
-                                  font: fontRegular,
+                                  font: fontItalic,
                                   fontSize: 11,
                                   color: PdfColors.grey700,
                                 ),
@@ -500,117 +751,32 @@ class SaveItineraryDialog extends StatelessWidget {
 
               pw.SizedBox(height: 20),
 
-              // Tổng kết với icon
+              // Footer
               pw.Container(
-                width: double.infinity,
                 padding: const pw.EdgeInsets.all(15),
                 decoration: pw.BoxDecoration(
-                  color: PdfColors.grey100,
+                  color: PdfColors.blue50,
                   borderRadius: pw.BorderRadius.circular(8),
-                  border: pw.Border.all(color: PdfColors.grey300),
+                  border: pw.Border.all(color: PdfColors.blue100),
                 ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Row(
-                      children: [
-                        _buildMDIIcon(
-                          iconFont,
-                          MdiIcons.chartLine,
-                          PdfColors.blue800,
-                          18,
-                        ),
-                        pw.SizedBox(width: 8),
-                        pw.Text(
-                          'TỔNG KẾT LỊCH TRÌNH',
-                          style: pw.TextStyle(
-                            font: fontBold,
-                            fontSize: 16,
-                            color: PdfColors.blue800,
-                          ),
-                        ),
-                      ],
-                    ),
-                    pw.SizedBox(height: 12),
-
-                    pw.Row(
-                      children: [
-                        _buildMDIIcon(
-                          iconFont,
-                          MdiIcons.timerOutline,
-                          PdfColors.blue600,
-                          14,
-                        ),
-                        pw.SizedBox(width: 6),
-                        pw.Text(
-                          'Tổng thời gian: ${_getTotalDuration()}',
-                          style: pw.TextStyle(font: fontRegular, fontSize: 12),
-                        ),
-                      ],
-                    ),
-
-                    if (_getTotalPrice() > 0) ...[
-                      pw.SizedBox(height: 4),
-                      pw.Row(
-                        children: [
-                          _buildMDIIcon(
-                            iconFont,
-                            MdiIcons.currencyUsd,
-                            PdfColors.green600,
-                            14,
-                          ),
-                          pw.SizedBox(width: 6),
-                          pw.Text(
-                            'Tổng chi phí: ${_formatPrice(_getTotalPrice())} VND',
-                            style: pw.TextStyle(
-                              font: fontRegular,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                    pw.Text(
+                      'Tạo bởi ứng dụng Lịch trình Du lịch',
+                      style: pw.TextStyle(
+                        font: fontRegular,
+                        fontSize: 10,
+                        color: PdfColors.grey600,
                       ),
-                    ],
-
-                    pw.SizedBox(height: 8),
-                    pw.Row(
-                      children: [
-                        _buildMDIIcon(
-                          iconFont,
-                          MdiIcons.calendar,
-                          PdfColors.grey600,
-                          14,
-                        ),
-                        pw.SizedBox(width: 6),
-                        pw.Text(
-                          'Được tạo: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}',
-                          style: pw.TextStyle(
-                            font: fontRegular,
-                            fontSize: 10,
-                            color: PdfColors.grey600,
-                          ),
-                        ),
-                      ],
                     ),
-
-                    pw.SizedBox(height: 12),
-                    pw.Row(
-                      children: [
-                        _buildMDIIcon(
-                          iconFont,
-                          MdiIcons.heart,
-                          PdfColors.red400,
-                          16,
-                        ),
-                        pw.SizedBox(width: 6),
-                        pw.Text(
-                          'Chúc bạn có chuyến du lịch vui vẻ và an toàn!',
-                          style: pw.TextStyle(
-                            font: fontBold,
-                            fontSize: 14,
-                            color: PdfColors.green600,
-                          ),
-                        ),
-                      ],
+                    pw.Text(
+                      'Ngày tạo: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                      style: pw.TextStyle(
+                        font: fontRegular,
+                        fontSize: 10,
+                        color: PdfColors.grey600,
+                      ),
                     ),
                   ],
                 ),
@@ -713,5 +879,80 @@ class SaveItineraryDialog extends StatelessWidget {
             onSave: onSave,
           ),
     );
+  }
+
+  // Tạo hình ảnh bản đồ Hồ Chí Minh
+  Future<pw.MemoryImage?> _generateMapImage() async {
+    try {
+      // Lấy Mapbox access token từ biến môi trường
+      final mapboxAccessToken = dotenv.env["MAPBOX_ACCESS_TOKEN"];
+
+      // Tạo danh sách các điểm trên bản đồ từ lịch trình
+      final List<LatLng> points = itinerary.map((item) => item.attraction.location).toList();
+
+      // Tạo danh sách tên các địa điểm
+      final List<String> locationNames = itinerary.map((item) => item.attraction.name).toList();
+
+      if (mapboxAccessToken == null || mapboxAccessToken.isEmpty) {
+        print('Mapbox access token is missing, falling back to OpenStreetMap');
+        // Sử dụng OpenStreetMap với các điểm trong lịch trình
+        return await HCMCMapHelper.generateHCMCOpenStreetMapImage(
+          itineraryPoints: points,
+          locationNames: locationNames,
+        );
+      }
+
+      // Sử dụng helper để tạo bản đồ Hồ Chí Minh với Mapbox và các điểm trong lịch trình
+      final mapboxMapImage = await HCMCMapHelper.generateHCMCMapImage(
+        mapboxAccessToken: mapboxAccessToken,
+        itineraryPoints: points,
+        locationNames: locationNames,
+        mapStyle: 'streets-v11',
+        width: 600,
+        height: 400,
+        zoom: 12.0,
+      );
+
+      if (mapboxMapImage != null) {
+        return mapboxMapImage;
+      }
+
+      // Fallback to OpenStreetMap if Mapbox fails
+      final osmMapImage = await HCMCMapHelper.generateHCMCOpenStreetMapImage(
+        itineraryPoints: points,
+        locationNames: locationNames,
+      );
+
+      if (osmMapImage != null) {
+        return osmMapImage;
+      }
+
+      // Nếu cả hai đều thất bại, sử dụng phương pháp dự phòng
+      return await HCMCMapHelper.generateFallbackMapImage(
+        itineraryPoints: points,
+        locationNames: locationNames,
+      );
+    } catch (e) {
+      print('❌ Error generating map image: $e');
+      // Fallback to generated image with itinerary points
+      final points = itinerary.map((item) => item.attraction.location).toList();
+      final locationNames = itinerary.map((item) => item.attraction.name).toList();
+
+      return await HCMCMapHelper.generateFallbackMapImage(
+        itineraryPoints: points,
+        locationNames: locationNames,
+      );
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+
+    if (hours > 0) {
+      return '$hours giờ ${minutes > 0 ? '$minutes phút' : ''}';
+    } else {
+      return '$minutes phút';
+    }
   }
 }
