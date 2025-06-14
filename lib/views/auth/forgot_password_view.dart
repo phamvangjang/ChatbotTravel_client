@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/auth/forgot_password_viewmodel.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/otp_arguments_model.dart';
-import '../../viewmodels/auth/verify_otp_viewmodel.dart';
-
 class ForgotPasswordView extends StatefulWidget {
   const ForgotPasswordView({super.key});
 
@@ -18,6 +15,15 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
     return ChangeNotifierProvider(
       create: (_) => ForgotPasswordViewModel(),
       child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+          ),
+        ),
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -26,52 +32,134 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                 builder: (context, viewModel, child) {
                   return Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Chatbot Travel Agents',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                      // Header
+                      Center(
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(40),
+                              ),
+                              child: const Icon(
+                                Icons.lock_reset,
+                                size: 40,
+                                color: Colors.blue,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'Quên mật khẩu?',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Đừng lo lắng! Chúng tôi sẽ gửi mã xác thực\nđến email của bạn',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Nhập Email để tiếp tục',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 40),
 
                       // Email field
-                      TextField(
-                        controller: viewModel.emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Địa chỉ email',
-                          suffix: Text(
-                            'Edit',
-                            style: TextStyle(color: Colors.blue),
-                          ),
+                      const Text(
+                        'Địa chỉ email',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: viewModel.emailController,
+                          decoration: InputDecoration(
+                            hintText: 'Nhập địa chỉ email của bạn',
+                            hintStyle: TextStyle(color: Colors.grey[400]),
+                            prefixIcon: Icon(
+                              Icons.email_outlined,
+                              color: Colors.grey[400],
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.done,
+                        ),
                       ),
                       const SizedBox(height: 16),
 
-                      // Thêm hiển thị lỗi
+                      // Error message
                       if (viewModel.errorMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(
-                            viewModel.errorMessage!,
-                            style: const TextStyle(
-                              color: Colors.red,
-                              fontSize: 14,
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.red.withOpacity(0.3),
                             ),
                           ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                color: Colors.red[700],
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  viewModel.errorMessage!,
+                                  style: TextStyle(
+                                    color: Colors.red[700],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                      const SizedBox(height: 24),
 
                       // Continue button
                       SizedBox(
                         width: double.infinity,
+                        height: 56,
                         child: ElevatedButton(
                           onPressed:
                               viewModel.canContinue && !viewModel.isLoading
@@ -79,9 +167,9 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                                     final success = await viewModel
                                         .forgotPassword(context);
                                     if (success && context.mounted) {
-                                      Navigator.pushReplacementNamed(
+                                      Navigator.pushNamed(
                                         context,
-                                        '/verify_otp',
+                                        '/verify_otp_forgot_pass',
                                         arguments: {
                                           'email': viewModel.emailController.text.trim(),
                                           'otp_type': 'forgot_password',
@@ -94,66 +182,58 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                             backgroundColor:
                                 viewModel.canContinue
                                     ? Colors.blue
-                                    : Colors.blue.withOpacity(0.5),
+                                    : Colors.grey[300],
                             foregroundColor: Colors.white,
+                            elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            side: BorderSide.none,
                           ),
                           child:
                               viewModel.isLoading
-                                  ? const CircularProgressIndicator(
-                                    color: Colors.white,
+                                  ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
                                   )
-                                  : const Text('Tiếp tục'),
+                                  : const Text(
+                                    'Gửi mã xác thực',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                         ),
                       ),
 
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text("Bạn đã có tài khoản?"),
-                          TextButton(
-                            onPressed: () => viewModel.goToLogin(context),
-                            child: const Text('Đăng nhập'),
+                      const SizedBox(height: 24),
+
+                      // Back to login
+                      Center(
+                        child: TextButton(
+                          onPressed: () => viewModel.goToLogin(context),
+                          child: RichText(
+                            text: const TextSpan(
+                              text: 'Nhớ mật khẩu? ',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 16,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: 'Đăng nhập',
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-
-                      const Divider(height: 32),
-                      const Text("hoặc"),
-
-                      const SizedBox(height: 16),
-
-                      /// Google button
-                      _buildOAuthButton(
-                        "Tiếp tục với Google",
-                        Icons.g_mobiledata,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Microsoft button
-                      _buildOAuthButton(
-                        "Tiếp tục với Microsoft Account",
-                        Icons.window,
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Apple button
-                      _buildOAuthButton("Tiếp tục với Apple", Icons.apple),
-
-                      const SizedBox(height: 32),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text('Điều khoản sử dụng'),
-                          SizedBox(width: 16),
-                          Text('Chính sách bảo mật'),
-                        ],
+                        ),
                       ),
                     ],
                   );
@@ -162,22 +242,6 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildOAuthButton(String text, IconData icon) {
-    return OutlinedButton.icon(
-      onPressed: () {},
-      icon: Icon(icon),
-      label: Text(text),
-      style: OutlinedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        minimumSize: const Size(double.infinity, 48),
-        alignment: Alignment.centerLeft,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-        side: BorderSide.none,
       ),
     );
   }

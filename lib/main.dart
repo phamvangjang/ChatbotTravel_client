@@ -5,6 +5,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:mobilev2/providers/user_provider.dart';
 import 'package:mobilev2/viewmodels/auth/forgot_password_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/login_viewmodel.dart';
+import 'package:mobilev2/viewmodels/auth/otp_forgotpass_view_model.dart';
 import 'package:mobilev2/viewmodels/auth/register_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/reset_password_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/verify_otp_viewmodel.dart';
@@ -12,6 +13,7 @@ import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/viewmodels/home/setting_viewmodel.dart';
 import 'package:mobilev2/views/auth/forgot_password_view.dart';
 import 'package:mobilev2/views/auth/login_view.dart';
+import 'package:mobilev2/views/auth/otp_forgotpass_view.dart';
 import 'package:mobilev2/views/auth/register_view.dart';
 import 'package:mobilev2/views/auth/reset_password_view.dart';
 import 'package:mobilev2/views/auth/verify_otp_view.dart';
@@ -42,8 +44,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LoginViewModel()),
         ChangeNotifierProvider(create: (_) => RegisterViewModel()),
         ChangeNotifierProvider(create: (_) => VerifyOtpViewModel()),
+        ChangeNotifierProvider(create: (_) => VerifyOtpForgotPassViewModel(email: '')),
         ChangeNotifierProvider(create: (_) => ForgotPasswordViewModel()),
-        ChangeNotifierProvider(create: (_) => ResetPasswordViewModel()),
+        ChangeNotifierProvider(create: (_) => ResetPasswordViewModel(email: '',otp: '')),
         ChangeNotifierProvider(create: (_) => UserProvider()..setUserIfAvailable(user)),
         ChangeNotifierProvider(create: (_) => SettingViewModel()),
         ChangeNotifierProxyProvider<UserProvider, MainViewModel>(
@@ -86,11 +89,12 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginView(),
         '/register': (context) => const RegisterView(),
         '/verify_otp': (context) => const VerifyOtpView(),
+        '/verify_otp_forgot_pass': (context) => const VerifyOtpForgotPassView(),
         '/home': (context) => const MainView(),
         '/setting': (context) => const SettingView(),
         '/draw': (context) => const DrawerView(),
         '/forgot_password': (context) => const ForgotPasswordView(),
-        '/reset_password': (context) => const ResetPasswordView(),
+        '/reset_password': (context) => const ResetPasswordView(email: '',otp: ''),
       },
     );
   }

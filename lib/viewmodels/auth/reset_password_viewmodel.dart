@@ -2,81 +2,68 @@ import 'package:flutter/material.dart';
 import 'package:mobilev2/services/auth/auth_service.dart';
 
 class ResetPasswordViewModel extends ChangeNotifier{
+  final String email;
+  final String otp;
+
   final AuthService _authService = AuthService();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
-  final TextEditingController newPasswordConfirmController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
+
+  final newPasswordFocusNode = FocusNode();
+  final newPasswordConfirmFocusNode = FocusNode();
 
   bool _obscureResetPassword = true;
   bool _obscureResetConfirmPassword = true;
   bool _isLoading = false;
   String? _errorMessage;
-  String? _verifiedOtp;
 
   bool get obscureResetPassword => _obscureResetPassword;
   bool get obscureResetConfirmPassword => _obscureResetConfirmPassword;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get canResetPassword => _validateInputs();
-  String? get verifiedOtp => _verifiedOtp;
 
-  ResetPasswordViewModel(){
+  ResetPasswordViewModel({required this.email, required this.otp}) {
     newPasswordController.addListener(_onTextChanged);
-    newPasswordConfirmController.addListener(_onTextChanged);
-  }
-
-  // Thiết lập dữ liệu từ arguments
-  void setResetData({
-    required String email,
-    String? resetToken,
-    String? verifiedOtp, // Thêm parameter
-  }) {
-    emailController.text = email;
-    _verifiedOtp = verifiedOtp;
-    notifyListeners();
+    confirmPasswordController.addListener(_onTextChanged);
+    newPasswordFocusNode.addListener(_handleFocusChange);
+    newPasswordConfirmFocusNode.addListener(_handleFocusChange);
+    print('Email: $email, OTP: $otp');
   }
 
   bool _validateInputs() {
     final newPassword = newPasswordController.text.trim();
-    final newPasswordConfirm = newPasswordConfirmController.text.trim();
-
-    _errorMessage = null;
+    final newPasswordConfirm = confirmPasswordController.text.trim();
 
     // Kiểm tra mật khẩu mới
     if (newPassword.isEmpty) {
-      _errorMessage = 'Vui lòng nhập mật khẩu mới';
       return false;
     }
 
     if (newPassword.length < 6) {
-      _errorMessage = 'Mật khẩu phải có ít nhất 6 ký tự';
       return false;
     }
 
     // Kiểm tra xác nhận mật khẩu
     if (newPasswordConfirm.isEmpty) {
-      _errorMessage = 'Vui lòng xác nhận mật khẩu';
       return false;
     }
 
     if (newPassword != newPasswordConfirm) {
-      _errorMessage = 'Mật khẩu xác nhận không khớp';
       return false;
     }
 
     // Kiểm tra email
-    if (emailController.text.trim().isEmpty) {
-      _errorMessage = 'Thiếu thông tin email';
+    if (email.isEmpty) {
       return false;
     }
 
     // Kiểm tra OTP đã xác nhận
-    if (_verifiedOtp == null || _verifiedOtp!.isEmpty) {
-      _errorMessage = 'Thiếu thông tin xác thực OTP';
+    if (otp.isEmpty) {
       return false;
     }
 
-    _errorMessage = null;
     return true;
   }
 
@@ -91,6 +78,33 @@ class ResetPasswordViewModel extends ChangeNotifier{
   }
 
   void _onTextChanged() {
+    _clearErrorAndValidate();
+  }
+
+  void onTextChanged() {
+    _clearErrorAndValidate();
+  }
+
+  void _clearErrorAndValidate() {
+    final newPassword = newPasswordController.text.trim();
+    final newPasswordConfirm = confirmPasswordController.text.trim();
+
+    // Xóa error message khi user bắt đầu nhập
+    if (newPassword.isEmpty && newPasswordConfirm.isEmpty) {
+      _errorMessage = null;
+      notifyListeners();
+      return;
+    }
+
+    // Validate và set error message
+    if (newPassword.isNotEmpty && newPassword.length < 6) {
+      _errorMessage = 'Mật khẩu phải có ít nhất 6 ký tự';
+    } else if (newPasswordConfirm.isNotEmpty && newPassword != newPasswordConfirm) {
+      _errorMessage = 'Mật khẩu xác nhận không khớp';
+    } else {
+      _errorMessage = null;
+    }
+
     notifyListeners();
   }
 
@@ -103,8 +117,8 @@ class ResetPasswordViewModel extends ChangeNotifier{
 
     try{
       final result = await _authService.resetPassword(
-          emailController.text.trim(),
-          _verifiedOtp!,
+          email.trim(),
+          otp.trim(),
           newPasswordController.text.trim());
 
       if (!(result['success'] as bool)) {
@@ -140,11 +154,20 @@ class ResetPasswordViewModel extends ChangeNotifier{
     }
   }
 
+  void _handleFocusChange() {
+    if (newPasswordFocusNode.hasFocus || newPasswordConfirmFocusNode.hasFocus) {
+      // Xóa error message khi focus vào field
+      _errorMessage = null;
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
-    emailController.dispose();
     newPasswordController.dispose();
-    newPasswordConfirmController.dispose();
+    confirmPasswordController.dispose();
+    newPasswordFocusNode.dispose();
+    newPasswordConfirmFocusNode.dispose();
     super.dispose();
   }
 }

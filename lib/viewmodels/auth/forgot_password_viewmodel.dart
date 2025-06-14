@@ -13,7 +13,7 @@ class ForgotPasswordViewModel extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
 
-  bool get canContinue => __validateInputs();
+  bool get canContinue => _validateInputs();
 
   String? get errorMessage => _errorMessage;
 
@@ -28,7 +28,7 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  bool __validateInputs() {
+  bool _validateInputs() {
     final email = emailController.text.trim();
     _errorMessage = null;
     final emailValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
@@ -46,9 +46,11 @@ class ForgotPasswordViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _authService.forgotPassword(emailController.text.trim());
+      final result = await _authService.forgotPassword(
+        emailController.text.trim(),
+      );
 
-      if(!(result['success'] as bool)){
+      if (!(result['success'] as bool)) {
         _errorMessage = result['message'];
       }
 

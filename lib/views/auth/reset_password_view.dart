@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:mobilev2/viewmodels/auth/reset_password_viewmodel.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/reset_password_arguments_model.dart';
-
 class ResetPasswordView extends StatefulWidget {
-  const ResetPasswordView({super.key});
+  final String email;
+  final String otp;
+  const ResetPasswordView({super.key ,required this.email, required this.otp});
 
   @override
   State<ResetPasswordView> createState() => _ResetPasswordViewState();
@@ -13,40 +13,9 @@ class ResetPasswordView extends StatefulWidget {
 
 class _ResetPasswordViewState extends State<ResetPasswordView> {
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final arguments = ModalRoute.of(context)?.settings.arguments;
-      final viewModel = Provider.of<ResetPasswordViewModel>(
-        context,
-        listen: false,
-      );
-
-      print("=== ResetPasswordView Arguments ===");
-      print("Arguments type: ${arguments.runtimeType}");
-      print("Arguments: $arguments");
-
-      if (arguments is Map<String, dynamic>) {
-        // Trường hợp truyền Map từ verify OTP
-        viewModel.setResetData(
-          email: arguments['email'] ?? '',
-          verifiedOtp: arguments['verified_otp'],
-        );
-      } else if (arguments is ResetPasswordArguments) {
-        // Trường hợp truyền ResetPasswordArguments
-        viewModel.setResetData(
-          email: arguments.email,
-          resetToken: arguments.resetToken,
-          verifiedOtp: arguments.verifiedOtp, // Thêm OTP đã xác nhận
-        );
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => ResetPasswordViewModel(),
+      create: (_) => ResetPasswordViewModel(email: widget.email, otp: widget.otp),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Đặt lại mật khẩu'),
@@ -135,7 +104,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Email: ${viewModel.emailController.text}',
+                                    'Email: ${widget.email}',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey.shade700,
@@ -144,7 +113,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                                 ),
                               ],
                             ),
-                            if (viewModel.verifiedOtp != null) ...[
+                            if (widget.otp.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Row(
                                 children: [
@@ -155,7 +124,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'OTP: ${viewModel.verifiedOtp!.replaceAll(RegExp(r'.'), '*')}',
+                                    'OTP: ${widget.otp}',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey.shade700,
@@ -173,7 +142,9 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
                       // New Password field
                       TextField(
                         controller: viewModel.newPasswordController,
+                        focusNode: viewModel.newPasswordFocusNode,
                         obscureText: viewModel.obscureResetPassword,
+                        onChanged: (value) => viewModel.onTextChanged(),
                         decoration: InputDecoration(
                           labelText: 'Mật khẩu mới',
                           hintText: 'Nhập mật khẩu mới (ít nhất 6 ký tự)',
@@ -196,8 +167,10 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 
                       // New Password Confirm field
                       TextField(
-                        controller: viewModel.newPasswordConfirmController,
+                        controller: viewModel.confirmPasswordController,
+                        focusNode: viewModel.newPasswordConfirmFocusNode,
                         obscureText: viewModel.obscureResetConfirmPassword,
+                        onChanged: (value) => viewModel.onTextChanged(),
                         decoration: InputDecoration(
                           labelText: 'Xác nhận mật khẩu mới',
                           hintText: 'Nhập lại mật khẩu mới',
