@@ -100,17 +100,6 @@ class VerifyOtpForgotPassViewModel extends ChangeNotifier {
 
       if (result['success'] as bool) {
         if (context.mounted) {
-          // Navigate to reset password screen
-          /*
-          Navigator.pushReplacementNamed(
-            context,
-            '/reset_password',
-            arguments: {
-              'email': email,
-              'verified_otp': otpCode,
-            },
-          );
-           */
           Navigator.push(
             context,
             MaterialPageRoute(
