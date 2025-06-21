@@ -64,12 +64,12 @@ class MainViewModel extends ChangeNotifier {
       // ✅ Thông báo listeners về thay đổi
       notifyListeners();
 
-      // Khởi tạo lại nếu có user hợp lệ
-      if (hasValidUser) {
+      // Khởi tạo lại nếu có user hợp lệ và chưa được khởi tạo
+      if (hasValidUser && _lastInitializedUserId != _currentUserId) {
         print("🚀 Initializing MainViewModel for user $newUserId");
         initialize();
       } else {
-        print("⚠️ No valid user, skipping initialization");
+        print("⚠️ No valid user or already initialized, skipping initialization");
       }
     } else {
       print("ℹ️ User ID unchanged: $_currentUserId");
@@ -82,6 +82,14 @@ class MainViewModel extends ChangeNotifier {
       print("No valid user, skipping initialization");
       return;
     }
+
+    // ✅ Bảo vệ: Kiểm tra xem đã được khởi tạo chưa
+    if (_lastInitializedUserId == _currentUserId) {
+      print("⚠️ Already initialized for user $_currentUserId, skipping");
+      return;
+    }
+
+    print("🚀 Starting initialization for user $_currentUserId");
 
     // Kiểm tra xem có phải user mới hay không
     bool isNewUser = _lastInitializedUserId != _currentUserId;
@@ -116,6 +124,8 @@ class MainViewModel extends ChangeNotifier {
       print("No conversations exist, creating new one for user $_currentUserId");
       await createNewConversation();
     }
+
+    print("✅ Initialization completed for user $_currentUserId");
   }
 
   void _resetUserData() {
@@ -191,10 +201,13 @@ class MainViewModel extends ChangeNotifier {
     } catch (e) {
       print("Error loading conversation $conversationId: $e");
       _setError(e.toString());
-
-      scrollToBottom(_scrollController);
-      // Nếu không tải được conversation, tạo mới
-      await createNewConversation();
+      
+      // ❌ LOẠI BỎ: Không tự động tạo conversation mới khi lỗi
+      // scrollToBottom(_scrollController);
+      // await createNewConversation();
+      
+      // ✅ Thay vào đó, chỉ hiển thị lỗi và để user tự xử lý
+      print("⚠️ Failed to load conversation $conversationId, user should handle this manually");
     } finally {
       _setLoading(false);
     }
@@ -203,6 +216,13 @@ class MainViewModel extends ChangeNotifier {
   // Tạo cuộc trò chuyện mới
   Future<void> createNewConversation() async {
     if (!hasValidUser) return;
+    
+    // ✅ Bảo vệ: Kiểm tra xem đã có conversation hiện tại chưa
+    if (_currentConversation != null) {
+      print("⚠️ Current conversation already exists: ${_currentConversation!.conversationId}");
+      return;
+    }
+    
     _setLoading(true);
     clearError();
 
@@ -368,13 +388,6 @@ class MainViewModel extends ChangeNotifier {
     await createNewConversation();
   }
 
-  // Mở bản đồ với text tin nhắn
-  void openMapWithMessageText(BuildContext context, String messageText) {
-    // Implement logic mở bản đồ
-    // Ví dụ: Navigator.push(context, MaterialPageRoute(...))
-    debugPrint('Mở bản đồ với: $messageText');
-  }
-
   // Refresh toàn bộ dữ liệu
   Future<void> refresh() async {
     if (!hasValidUser) return;
@@ -404,33 +417,11 @@ class MainViewModel extends ChangeNotifier {
     _error = null;
   }
 
-  // Setter cho user ID (khi user đăng nhập)
-  void setCurrentUser(int userId, String language) {
-    bool isUserChanged = _currentUserId != userId;
-
-    _currentUserId = userId;
-    _sourceLanguage = language;
-
-    if (isUserChanged) {
-      print("User changed from $_currentUserId to $userId");
-      // Reset dữ liệu khi user thay đổi
-      _resetUserData();
-      _lastInitializedUserId = null; // Reset để force initialize lại
-    }
-
-    initialize(); // Tải lại dữ liệu cho user mới// Tải lại dữ liệu cho user mới
-  }
-
   // Phương thức logout để reset toàn bộ dữ liệu
   void logout() {
     _resetUserData();
     _lastInitializedUserId = null;
     _currentUserId = 0; // hoặc giá trị mặc định
-  }
-
-  void sendAudioMessage() async {
-    // Ghi âm hoặc chọn file âm thanh rồi gửi lên server
-    print("sendAudioMessage");
   }
 
   // Kiểm tra xem tin nhắn có chứa thông tin địa điểm không
@@ -561,14 +552,20 @@ class MainViewModel extends ChangeNotifier {
     );
   }
 
-  // Tạo lịch trình
+  // Tạo lịch trình - Cải thiện logic
   void createItinerary(BuildContext context, Message message) {
+    // TODO: Implement actual itinerary creation logic
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Lập lịch trình'),
-        content: const Text(
-          'Tính năng lập lịch trình đang được phát triển.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Tính năng lập lịch trình đang được phát triển.'),
+            const SizedBox(height: 16),
+            Text('Tin nhắn: ${message.messageText.substring(0, 50)}...'),
+          ],
         ),
         actions: [
           TextButton(

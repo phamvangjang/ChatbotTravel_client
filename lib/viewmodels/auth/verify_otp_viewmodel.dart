@@ -13,7 +13,7 @@ class VerifyOtpViewModel extends ChangeNotifier {
 
   // Resend OTP functionality
   bool canResend = false;
-  int resendCountdown = 300;
+  int resendCountdown = 61;
   Timer? _resendTimer;
 
   String get email => _email;
@@ -47,7 +47,7 @@ class VerifyOtpViewModel extends ChangeNotifier {
 
   void _startResendTimer() {
     canResend = false;
-    resendCountdown = 300;
+    resendCountdown = 60;
 
     _resendTimer?.cancel();
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {

@@ -20,10 +20,11 @@ class _MainViewState extends State<MainView> {
   @override
   void initState() {
     super.initState();
-    // Khởi tạo dữ liệu khi widget được tạo
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MainViewModel>().initialize();
-    });
+    // ❌ LOẠI BỎ: Không cần gọi initialize() ở đây
+    // vì nó đã được gọi tự động qua ChangeNotifierProxyProvider
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   context.read<MainViewModel>().initialize();
+    // });
   }
 
   @override
