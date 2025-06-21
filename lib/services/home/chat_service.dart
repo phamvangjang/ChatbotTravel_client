@@ -83,7 +83,7 @@ class ChatService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse(ApiService.saveMessageUrl),
+        Uri.parse(ApiService.sendMessageUrl),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'conversation_id': conversationId,

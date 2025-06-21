@@ -18,6 +18,7 @@ class ApiService {
   static String messagesByConversationUrl(int conversationId) =>
       "$_baseUrl/chatting/conversations/messages?conversation_id=$conversationId";
   static String get saveMessageUrl => "$_baseUrl/chatting/messages";
+  static String get sendMessageUrl => "$_baseUrl/chatting/messages/update";
   static String endConversationUrl(int conversationId) =>
       "$_baseUrl/chatting/conversations/end?conversation_id=$conversationId";
   static String sendVoiceMessagesUrl(int conversationId, String sender) => "$_baseUrl/chatting/messages/voice?conversation_id=$conversationId&sender=$sender";

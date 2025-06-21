@@ -3,6 +3,7 @@ import 'package:mobilev2/providers/user_provider.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/views/home/drawer_view.dart';
 import 'package:mobilev2/views/widgets/chat_input.dart';
+import 'package:mobilev2/views/widgets/scroll_to_bottom_button.dart';
 import 'package:provider/provider.dart';
 import '../widgets/chat_bubble.dart';
 
@@ -168,7 +169,28 @@ class _MainViewState extends State<MainView> {
               const SizedBox(height: 8),
 
               // Danh sách tin nhắn
-              Expanded(child: _buildMessagesList(viewModel)),
+              Expanded(
+                child: Stack(
+                  children: [
+                    _buildMessagesList(viewModel),
+                    // Scroll to bottom button
+                    ScrollToBottomButton(
+                      scrollController: _scrollController,
+                      onPressed: () {
+                        // Có thể thêm logic bổ sung ở đây nếu cần
+                        print("Scroll to bottom button pressed");
+                      },
+                      showThreshold: 150.0, // Hiển thị khi cách bottom 150px
+                      backgroundColor: Colors.blue.shade600,
+                      iconColor: Colors.white,
+                      size: 40.0,
+                      newMessageCount: viewModel.messages.isNotEmpty ? 
+                        viewModel.messages.length : null, // Hiển thị tổng số tin nhắn
+                      showNewMessageBadge: true,
+                    ),
+                  ],
+                ),
+              ),
 
               const Divider(height: 1),
 
