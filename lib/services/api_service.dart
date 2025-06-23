@@ -22,6 +22,8 @@ class ApiService {
   static String endConversationUrl(int conversationId) =>
       "$_baseUrl/chatting/conversations/end?conversation_id=$conversationId";
   static String sendVoiceMessagesUrl(int conversationId, String sender) => "$_baseUrl/chatting/messages/voice?conversation_id=$conversationId&sender=$sender";
+
+  static String get detectAttractionsUrl => "$_baseUrl/map/attractions/from-places";
 }
 /*
 # Kiểm tra thiết bị

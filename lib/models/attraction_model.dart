@@ -39,7 +39,7 @@ class Attraction {
       name: json['name'] ?? '',
       address: json['address'] ?? '',
       description: json['description'] ?? '',
-      imageUrl: json['imageUrl'] ?? '',
+      imageUrl: json['image_url'] ?? '',
       rating: (json['rating'] ?? 0.0).toDouble(),
       location: LatLng(
         (json['latitude'] ?? 0.0).toDouble(),
@@ -48,10 +48,10 @@ class Attraction {
       category: json['category'] ?? 'tourist_attraction',
       tags: List<String>.from(json['tags'] ?? []),
       price: json['price']?.toDouble(),
-      openingHours: json['openingHours'],
-      phoneNumber: json['phoneNumber'],
+      openingHours: json['opening_hours'],
+      phoneNumber: json['phone'],
       website: json['website'],
-      aliases: json['aliases']
+      aliases: List<String>.from(json['aliases'] ?? [])
     );
   }
 

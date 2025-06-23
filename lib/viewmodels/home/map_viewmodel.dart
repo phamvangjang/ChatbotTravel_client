@@ -39,12 +39,16 @@ class MapViewModel extends ChangeNotifier {
   LatLng get initialPosition => _initialPosition;
 
   // Nội dung tin nhắn
-  String _messageContent = '';
-  String get messageContent => _messageContent;
+  List<String> _places = [];
+  List<String> get places => _places;
 
   // ID cuộc trò chuyện
   int _conversationId = 0;
   int get conversationId => _conversationId;
+
+  // Ngôn ngữ của bot message
+  String _language = '';
+  String get language => _language;
 
   // Danh sách địa điểm du lịch
   List<Attraction> _detectedAttractions = [];
@@ -95,9 +99,10 @@ class MapViewModel extends ChangeNotifier {
   }
 
   // Khởi tạo
-  Future<void> initialize(String messageContent, int conversationId) async {
-    _messageContent = messageContent;
+  Future<void> initialize(List<String> places, int conversationId, String language) async {
+    _places = places;
     _conversationId = conversationId;
+    _language = language;
     _isLoading = true;
     notifyListeners();
 
@@ -170,12 +175,12 @@ class MapViewModel extends ChangeNotifier {
   // Phát hiện địa điểm từ nội dung tin nhắn
   Future<void> _detectAttractionsFromMessage() async {
     try {
-      if (_messageContent.isNotEmpty) {
+      if (_places.isNotEmpty) {        
         _detectedAttractions = await _attractionService
-            .detectAttractionsFromMessage(_messageContent);
-        print("ℹ️ _detectAttractionsFromMessage: get location from messages");
+            .detectAttractionsFromMessage(_places, language: _language);
+        print("ℹ️ _detectAttractionsFromMessage: get location from places with language: $_language");
       } else {
-        // Nếu không có tin nhắn, lấy địa điểm gần đó
+        // Nếu không có places, lấy địa điểm gần đó
         if (_currentPosition != null) {
           LatLng currentLatLng = LatLng(
             _currentPosition!.latitude,
@@ -184,7 +189,7 @@ class MapViewModel extends ChangeNotifier {
           _detectedAttractions = await _attractionService.getNearbyAttractions(
             currentLatLng,
           );
-          print("ℹ️ _detectAttractionsFromMessage: nothing messages get getNearbyAttractions");
+          print("ℹ️ _detectAttractionsFromMessage: nothing places get getNearbyAttractions");
         } else {
           // Lấy tất cả địa điểm
           print("ℹ️ _detectAttractionsFromMessage: get all location");

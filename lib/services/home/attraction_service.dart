@@ -1,9 +1,12 @@
 import 'dart:math';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import 'package:latlong2/latlong.dart';
 import 'package:mobilev2/scape/attraction_scape.dart';
 
 import '../../models/attraction_model.dart';
+import '../../services/api_service.dart';
 
 class AttractionService{
   static final AttractionService _instance = AttractionService._internal();
@@ -252,46 +255,87 @@ class AttractionService{
     }
   }
 
-  /// Phát hiện địa điểm từ nội dung tin nhắn
-  Future<List<Attraction>> detectAttractionsFromMessage(String message) async {
+  /// Phát hiện địa điểm từ danh sách places thông qua API
+  Future<List<Attraction>> detectAttractionsFromMessage(List<String> places, {String? language}) async {
     try {
-      await Future.delayed(const Duration(milliseconds: 300));
-      //print("ℹ️ detectAttractionsFromMessage with messages: ${message.toString()}");
+      print("ℹ️ detectAttractionsFromMessage with places: ${places.toString()}");
+      print("ℹ️ Language: $language");
 
-      String lowerMessage = message.toLowerCase().toString();
-      List<Attraction> detectedAttractions = [];
+      // Chuẩn bị request body theo format API
+      final requestBody = {
+        "places": places,
+        "language": language ?? 'vietnamese',
+      };
 
-      for (Attraction attraction in _attractionScape.hcmAttractions) {
-        // Kiểm tra tên địa điểm
-        if (lowerMessage.contains(attraction.name.toLowerCase())) {
-          detectedAttractions.add(attraction);
-          print("ℹ️ get attraction name ${attraction.name}");
-          continue;
+      print("📤 API Request: ${jsonEncode(requestBody)}");
+
+      // Gọi API thực tế
+      final response = await http.post(
+        Uri.parse(ApiService.detectAttractionsUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      print("📥 API Response Status: ${response.statusCode}");
+      print("📥 API Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        
+        // Kiểm tra status
+        if (responseData['status'] == 'success') {
+          final List<dynamic> attractionsData = responseData['data'] ?? [];
+          return _parseAttractionsFromApiResponse(attractionsData);
+        } else {
+          print('❌ API returned error: ${responseData['message']}');
+          return [];
         }
+      } else {
+        print('❌ API request failed: ${response.statusCode}');
+        throw Exception('API request failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('ℹ️ Lỗi khi phát hiện địa điểm từ places: $e');
+      return [];
+    }
+  }
 
-        // Kiểm tra các từ khóa trong tags
-        /*
-        for (String tag in attraction.tags) {
-          if (lowerMessage.contains(tag.toLowerCase())) {
-            detectedAttractions.add(attraction);
-            print("ℹ️ get attraction tag ${attraction.tags}");
-            break;
-          }
-        }
-         */
+  /// Parse attractions từ response API
+  List<Attraction> _parseAttractionsFromApiResponse(List<dynamic> attractionsData) {
+    try {
+      List<Attraction> attractions = [];
 
-        // Kiểm tra danh mục
-        /*
-        if (lowerMessage.contains(attraction.category.toLowerCase())) {
-          detectedAttractions.add(attraction);
-          print("ℹ️ get attraction category ${attraction.category}");
+      for (final attractionData in attractionsData) {
+        try {
+          final attraction = Attraction(
+            id: attractionData['id'] ?? '',
+            name: attractionData['name'] ?? '',
+            address: attractionData['address'] ?? '',
+            description: attractionData['description'] ?? '',
+            imageUrl: attractionData['image_url'] ?? '',
+            rating: (attractionData['rating'] ?? 0.0).toDouble(),
+            location: LatLng(
+              (attractionData['latitude'] ?? 0.0).toDouble(),
+              (attractionData['longitude'] ?? 0.0).toDouble(),
+            ),
+            category: attractionData['category'] ?? 'tourist_attraction',
+            tags: List<String>.from(attractionData['tags'] ?? []),
+            openingHours: attractionData['opening_hours'],
+            price: attractionData['price']?.toDouble(),
+            phoneNumber: attractionData['phone'],
+            website: attractionData['website'],
+          );
+          attractions.add(attraction);
+          print("✅ Parsed attraction: ${attraction.name}");
+        } catch (e) {
+          print('❌ Lỗi parse attraction: $e');
         }
-         */
       }
 
-      return detectedAttractions.toSet().toList(); // Loại bỏ trùng lặp
+      print("📊 Total attractions parsed: ${attractions.length}");
+      return attractions;
     } catch (e) {
-      print('ℹ️ Lỗi khi phát hiện địa điểm từ tin nhắn: $e');
+      print('❌ Lỗi parse API response: $e');
       return [];
     }
   }

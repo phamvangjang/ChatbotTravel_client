@@ -9,13 +9,15 @@ import '../../viewmodels/home/map_viewmodel.dart';
 import '../widgets/save_itinerary_dialog.dart';
 
 class MapView extends StatelessWidget {
-  final String messageContent;
+  final List<String> places;
   final int conversationId;
+  final String language;
 
   const MapView({
     super.key,
-    required this.messageContent,
+    required this.places,
     required this.conversationId,
+    required this.language,
   });
 
   @override
@@ -23,20 +25,23 @@ class MapView extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => MapViewModel(),
       child: _MapViewContent(
-        messageContent: messageContent,
+        places: places,
         conversationId: conversationId,
+        language: language,
       ),
     );
   }
 }
 
 class _MapViewContent extends StatefulWidget {
-  final String messageContent;
+  final List<String> places;
   final int conversationId;
+  final String language;
 
   const _MapViewContent({
-    required this.messageContent,
+    required this.places,
     required this.conversationId,
+    required this.language,
   });
 
   @override
@@ -54,7 +59,7 @@ class _MapViewContentState extends State<_MapViewContent>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<MapViewModel>(context, listen: false);
-      viewModel.initialize(widget.messageContent, widget.conversationId);
+      viewModel.initialize(widget.places, widget.conversationId, widget.language);
     });
   }
 

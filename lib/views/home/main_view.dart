@@ -377,8 +377,7 @@ class _MainViewState extends State<MainView> {
                             children: [
                               // Nút xem bản đồ
                               ElevatedButton.icon(
-                                onPressed:
-                                    () => viewModel.navigateToMapView(context, msg.places as Message),
+                                onPressed: () => viewModel.navigateToMapView(context, msg.places!, msg.translatedText ?? ''),
                                 icon: const Icon(Icons.map, size: 16),
                                 label: const Text('Bản đồ'),
                                 style: ElevatedButton.styleFrom(

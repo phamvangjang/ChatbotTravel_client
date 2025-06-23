@@ -533,7 +533,7 @@ class MainViewModel extends ChangeNotifier {
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
                 Navigator.pop(context);
-                navigateToMapView(context, message);
+                navigateToMapView(context, message.places!, message.translatedText ?? '');
               },
             ),
 
@@ -563,13 +563,14 @@ class MainViewModel extends ChangeNotifier {
   }
 
   // Chuyển đến MapView
-  void navigateToMapView(BuildContext context, Message message) {
+  void navigateToMapView(BuildContext context, List<String> places, String language) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => MapView(
-          conversationId: message.conversationId,
-          messageContent: message.messageText,
+          conversationId: _currentConversation?.conversationId ?? 0,
+          places: places,
+          language: language,
         ),
       ),
     );
