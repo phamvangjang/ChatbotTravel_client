@@ -718,7 +718,7 @@ class MapViewModel extends ChangeNotifier {
   }
 
   // Tìm kiếm địa điểm
-  Future<void> searchAttractions(String query) async {
+  Future<void> searchAttractions(String query, {String language = 'vietnamese'}) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -731,17 +731,11 @@ class MapViewModel extends ChangeNotifier {
         );
       }
 
-      /*
-      _detectedAttractions = await _attractionService.searchAttractions(
-        query,
-        currentLocation: currentLocation,
-      );
-      _updateMarkers();
-       */
-      // Get the search results
+      // Get the search results with language parameter
       List<Attraction> searchResults = await _attractionService.searchAttractions(
         query,
         currentLocation: currentLocation,
+        language: language,
       );
 
       // Create a map of attraction IDs that are in the itinerary across all dates

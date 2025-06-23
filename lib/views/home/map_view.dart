@@ -7,6 +7,10 @@ import '../../models/attraction_model.dart';
 import '../../models/itinerary_item.dart';
 import '../../viewmodels/home/map_viewmodel.dart';
 import '../widgets/save_itinerary_dialog.dart';
+import '../widgets/attraction_info_card.dart';
+import '../widgets/itinerary_item_card.dart';
+import '../widgets/attraction_chip.dart';
+import '../widgets/legend_item.dart';
 
 class MapView extends StatelessWidget {
   final List<String> places;
@@ -140,30 +144,76 @@ class _MapViewContentState extends State<_MapViewContent>
   }
 
   void _showSearchDialog(BuildContext context, MapViewModel viewModel) {
+    String selectedLanguage = 'vietnamese';
+    final queryController = TextEditingController();
+
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
             title: const Text('Tìm kiếm địa điểm'),
-            content: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Nhập tên địa điểm...',
-                prefixIcon: Icon(Icons.search),
-              ),
-              onSubmitted: (query) {
-                if (query.isNotEmpty) {
-                  viewModel.searchAttractions(query);
-                  Navigator.pop(context);
-                }
-              },
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Language selection
+                DropdownButtonFormField<String>(
+                  value: selectedLanguage,
+                  decoration: const InputDecoration(
+                    labelText: 'Ngôn ngữ',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.language),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'vietnamese', child: Text('Tiếng Việt')),
+                    DropdownMenuItem(value: 'english', child: Text('English')),
+                    DropdownMenuItem(value: 'chinese', child: Text('中文')),
+                    DropdownMenuItem(value: 'korean', child: Text('한국어')),
+                    DropdownMenuItem(value: 'japanese', child: Text('日本語')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedLanguage = value!;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Search query
+                TextField(
+                  controller: queryController,
+                  decoration: const InputDecoration(
+                    hintText: 'Nhập tên địa điểm...',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onSubmitted: (query) {
+                    if (query.isNotEmpty) {
+                      viewModel.searchAttractions(query, language: selectedLanguage);
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+              ],
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Hủy'),
               ),
+              ElevatedButton(
+                onPressed: () {
+                  final query = queryController.text.trim();
+                  if (query.isNotEmpty) {
+                    viewModel.searchAttractions(query, language: selectedLanguage);
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text('Tìm kiếm'),
+              ),
             ],
-          ),
+          );
+        },
+      ),
     );
   }
 }
@@ -255,10 +305,10 @@ class _MapTab extends StatelessWidget {
                 Wrap(
                   spacing: 12,
                   children: [
-                    _buildLegendItem(Colors.blue, 'Vị trí hiện tại'),
-                    _buildLegendItem(Colors.red, 'Địa điểm'),
-                    _buildLegendItem(Colors.orange, 'Trong lịch trình'),
-                    _buildLegendItem(Colors.green, 'Đang chọn'),
+                    LegendItem(color: Colors.blue, label: 'Vị trí hiện tại'),
+                    LegendItem(color: Colors.red, label: 'Địa điểm'),
+                    LegendItem(color: Colors.orange, label: 'Trong lịch trình'),
+                    LegendItem(color: Colors.green, label: 'Đang chọn'),
                   ],
                 ),
 
@@ -276,39 +326,11 @@ class _MapTab extends StatelessWidget {
                         (item) => item.attraction.id == attraction.id,
                       );
 
-                      return Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        child: GestureDetector(
-                          onTap: () => viewModel.selectAttraction(attraction),
-                          child: Chip(
-                            avatar: Icon(
-                              isInItinerary
-                                  ? Icons.schedule
-                                  : Icons.location_on,
-                              size: 16,
-                              color:
-                                  isSelected
-                                      ? Colors.white
-                                      : isInItinerary
-                                      ? Colors.orange.shade700
-                                      : Colors.red.shade700,
-                            ),
-                            label: Text(
-                              attraction.name,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color:
-                                    isSelected ? Colors.white : Colors.black87,
-                              ),
-                            ),
-                            backgroundColor:
-                                isSelected
-                                    ? Colors.green.shade600
-                                    : isInItinerary
-                                    ? Colors.orange.shade100
-                                    : Colors.grey.shade100,
-                          ),
-                        ),
+                      return AttractionChip(
+                        attraction: attraction,
+                        isSelected: isSelected,
+                        isInItinerary: isInItinerary,
+                        onTap: () => viewModel.selectAttraction(attraction),
                       );
                     },
                   ),
@@ -444,43 +466,13 @@ class _MapTab extends StatelessWidget {
                 ),
               ],
             ),
-            child: _AttractionInfoCard(
+            child: AttractionInfoCard(
               attraction: viewModel.selectedAttraction!,
               onAddToItinerary:
                   () => _showAddToItineraryDialog(context, viewModel),
               onClose: () => viewModel.clearSelection(),
             ),
           ),
-      ],
-    );
-  }
-
-  // Widget chú thích màu sắc
-  Widget _buildLegendItem(Color color, String label, {bool showNumber = false}) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 1),
-          ),
-          child: showNumber ? Center(
-            child: Text(
-              "1",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 8,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ) : null,
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 10)),
       ],
     );
   }
@@ -653,7 +645,7 @@ class _CalendarTab extends StatelessWidget {
                     onReorder: viewModel.reorderItinerary,
                     itemBuilder: (context, index) {
                       final item = viewModel.todayItinerary[index];
-                      return _ItineraryItemCard(
+                      return ItineraryItemCard(
                         key: ValueKey(
                           item.attraction.id + item.visitTime.toString(),
                         ),
@@ -1171,175 +1163,6 @@ class _TimelineTab extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// Widget hiển thị thông tin địa điểm
-class _AttractionInfoCard extends StatelessWidget {
-  final Attraction attraction;
-  final VoidCallback onAddToItinerary;
-  final VoidCallback onClose;
-
-  const _AttractionInfoCard({
-    required this.attraction,
-    required this.onAddToItinerary,
-    required this.onClose,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        //Image thumb
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            attraction.imageUrl,
-            width: 60,
-            height: 60,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                width: 60,
-                height: 60,
-                color: Colors.grey.shade300,
-                child: const Icon(Icons.image_not_supported),
-              );
-            },
-          ),
-        ),
-        const SizedBox(width: 12),
-
-        //Name, address, rating
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                attraction.name,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                attraction.address,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Row(
-                children: [
-                  Icon(Icons.star, color: Colors.amber, size: 16),
-                  Text(
-                    ' ${attraction.rating}',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  if (attraction.price != null) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      '${NumberFormat('#,###', 'vi_VN').format(attraction.price)}đ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.green.shade600,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        //action add or cancel
-        Column(
-          children: [
-            ElevatedButton(
-              onPressed: onAddToItinerary,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue.shade600,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(80, 36),
-              ),
-              child: const Text('Thêm', style: TextStyle(fontSize: 12)),
-            ),
-            IconButton(
-              onPressed: onClose,
-              icon: const Icon(Icons.close, size: 20),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-// Widget item trong lịch trình
-class _ItineraryItemCard extends StatelessWidget {
-  final ItineraryItem item;
-  final int index;
-  final VoidCallback onRemove;
-  final VoidCallback onEdit;
-
-  const _ItineraryItemCard({
-    super.key,
-    required this.item,
-    required this.index,
-    required this.onRemove,
-    required this.onEdit,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.blue.shade600,
-          child: Text(
-            '${index + 1}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        title: Text(item.attraction.name),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${TimeOfDay.fromDateTime(item.visitTime).format(context)} - ${item.estimatedDuration.inHours}h ${item.estimatedDuration.inMinutes % 60}m',
-              style: const TextStyle(fontSize: 12),
-            ),
-            if (item.notes.isNotEmpty)
-              Text(
-                item.notes,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              onPressed: onEdit,
-              icon: const Icon(Icons.edit, size: 20),
-            ),
-            IconButton(
-              onPressed: onRemove,
-              icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-            ),
-            const Icon(Icons.drag_handle),
-          ],
-        ),
-      ),
     );
   }
 }

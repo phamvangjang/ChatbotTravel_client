@@ -49,41 +49,56 @@ class AttractionService{
     }
   }
 
-  /// Tìm kiếm địa điểm theo từ khóa
+  /// Tìm kiếm địa điểm theo từ khóa thông qua API
   Future<List<Attraction>> searchAttractions(
       String query, {
         LatLng? currentLocation,
+        String language = 'vietnamese',
         int limit = 20,
       }) async {
     try {
-      // Trong thực tế, bạn sẽ gọi API
-      // final response = await http.get(
-      //   Uri.parse('$baseUrl/attractions/search?q=$query&limit=$limit'),
-      // );
+      print("🔍 Searching attractions for query: $query");
+      print("🌐 Language: $language");
+      print("📊 Limit: $limit");
 
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Chuẩn bị query parameters
+      final queryParams = {
+        'q': query,
+        'language': language,
+        'limit': limit.toString(),
+      };
 
-      // Tìm kiếm trong dữ liệu mẫu
-      String lowerQuery = query.toLowerCase();
-      List<Attraction> results = _attractionScape.hcmAttractions.where((attraction) {
-        return attraction.name.toLowerCase().contains(lowerQuery) ||
-            attraction.address.toLowerCase().contains(lowerQuery) ||
-            attraction.description.toLowerCase().contains(lowerQuery) ||
-            attraction.tags.any((tag) => tag.toLowerCase().contains(lowerQuery));
-      }).toList();
+      // Tạo URL với query parameters
+      final uri = Uri.parse(ApiService.searchAttractionsUrl).replace(queryParameters: queryParams);
+      
+      print("📤 API Request URL: $uri");
 
-      // Sắp xếp theo khoảng cách nếu có vị trí hiện tại
-      if (currentLocation != null) {
-        results.sort((a, b) {
-          double distanceA = _calculateDistance(currentLocation, a.location);
-          double distanceB = _calculateDistance(currentLocation, b.location);
-          return distanceA.compareTo(distanceB);
-        });
+      // Gọi API thực tế
+      final response = await http.get(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      print("📥 API Response Status: ${response.statusCode}");
+      print("📥 API Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        
+        // Kiểm tra status
+        if (responseData['status'] == 'success') {
+          final List<dynamic> attractionsData = responseData['data'] ?? [];
+          return _parseAttractionsFromApiResponse(attractionsData);
+        } else {
+          print('❌ API returned error: ${responseData['message']}');
+          return [];
+        }
+      } else {
+        print('❌ API request failed: ${response.statusCode}');
+        throw Exception('API request failed: ${response.statusCode}');
       }
-
-      return results.take(limit).toList();
     } catch (e) {
-      print('Lỗi khi tìm kiếm địa điểm: $e');
+      print('❌ Lỗi khi tìm kiếm địa điểm: $e');
       return [];
     }
   }
