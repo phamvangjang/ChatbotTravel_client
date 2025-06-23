@@ -230,6 +230,14 @@ class MainViewModel extends ChangeNotifier {
     }
   }
 
+  // Force reset conversation state (dùng khi có lỗi)
+  void forceResetConversation() {
+    print("🔄 Force resetting conversation state");
+    _currentConversation = null;
+    _messages = [];
+    notifyListeners();
+  }
+
   // Tạo cuộc trò chuyện mới
   Future<void> createNewConversation() async {
     if (!hasValidUser) return;
@@ -237,7 +245,8 @@ class MainViewModel extends ChangeNotifier {
     // ✅ Bảo vệ: Kiểm tra xem đã có conversation hiện tại chưa
     if (_currentConversation != null) {
       print("⚠️ Current conversation already exists: ${_currentConversation!.conversationId}");
-      return;
+      print("🔄 Force resetting to allow new conversation creation");
+      forceResetConversation();
     }
     
     _setLoading(true);
@@ -260,10 +269,10 @@ class MainViewModel extends ChangeNotifier {
       _conversations.insert(0, newConversation);
       _messages = [];
 
-      print("Created new conversation ${newConversation.conversationId} for user $_currentUserId");
+      print("✅ Created new conversation ${newConversation.conversationId} for user $_currentUserId");
       notifyListeners();
     } catch (e) {
-      print("Error creating new conversation for user $_currentUserId: $e");
+      print("❌ Error creating new conversation for user $_currentUserId: $e");
       _setError(e.toString());
     } finally {
       _setLoading(false);
@@ -393,15 +402,22 @@ class MainViewModel extends ChangeNotifier {
   Future<void> startNewConversation() async {
     if (_currentConversation != null) {
       try {
+        print("🔄 Attempting to end conversation ${_currentConversation!.conversationId}");
         await _chatService.endConversation(
           _currentConversation!.conversationId,
         );
+        print("✅ Successfully ended conversation ${_currentConversation!.conversationId}");
       } catch (e) {
         // Log error nhưng vẫn tiếp tục tạo cuộc trò chuyện mới
-        debugPrint('Lỗi kết thúc cuộc trò chuyện: $e');
+        print('❌ Lỗi kết thúc cuộc trò chuyện: $e');
+        print('⚠️ Continuing to create new conversation despite end conversation error');
       }
     }
 
+    // Reset current conversation để có thể tạo mới
+    forceResetConversation();
+    
+    // Tạo cuộc trò chuyện mới
     await createNewConversation();
   }
 

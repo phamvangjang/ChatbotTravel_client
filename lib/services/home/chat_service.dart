@@ -271,16 +271,29 @@ class ChatService {
   // Kết thúc cuộc trò chuyện
   Future<void> endConversation(int conversationId) async {
     try {
+      print("🔄 Ending conversation $conversationId");
+      
       final response = await http.post(
         Uri.parse(ApiService.endConversationUrl(conversationId)),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'ended_at': DateTime.now().toIso8601String()}),
       );
 
-      if (response.statusCode != 200) {
-        throw Exception('Không thể kết thúc cuộc trò chuyện');
+      print("📥 End conversation response status: ${response.statusCode}");
+      print("📥 End conversation response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        print("✅ Successfully ended conversation $conversationId");
+      } else if (response.statusCode == 409) {
+        // Conversation đã được kết thúc trước đó - coi như thành công
+        print("ℹ️ Conversation $conversationId is already ended (409) - treating as success");
+      } else {
+        print("❌ Failed to end conversation $conversationId: ${response.statusCode}");
+        print("❌ Response body: ${response.body}");
+        throw Exception('Không thể kết thúc cuộc trò chuyện: HTTP ${response.statusCode}');
       }
     } catch (e) {
+      print("❌ Error ending conversation $conversationId: $e");
       throw Exception('Lỗi kết thúc cuộc trò chuyện: $e');
     }
   }
