@@ -10,7 +10,6 @@ import '../../views/home/map_view.dart';
 class MainViewModel extends ChangeNotifier {
   final ChatService _chatService = ChatService();
   final VoiceService _voiceService = VoiceService();
-  final ScrollController _scrollController = ScrollController();
   int? _currentUserId;
 
   // State variables
@@ -21,7 +20,7 @@ class MainViewModel extends ChangeNotifier {
   bool _isSending = false;
   bool _isRecording = false;
   String? _error;
-  String _sourceLanguage = 'vi';
+  final String _sourceLanguage = 'vi';
   int? _lastInitializedUserId;
 
   // Getters
@@ -197,14 +196,32 @@ class MainViewModel extends ChangeNotifier {
       _messages = await _chatService.getConversationMessages(conversationId);
 
       print("Loaded ${_messages.length} messages for conversation $conversationId");
+      
+      // Thống kê places trong tất cả tin nhắn
+      int messagesWithPlaces = 0;
+      int totalPlaces = 0;
+      List<String> allPlaces = [];
+      
+      for (final message in _messages) {
+        if (message.places != null && message.places!.isNotEmpty) {
+          messagesWithPlaces++;
+          totalPlaces += message.places!.length;
+          allPlaces.addAll(message.places!);
+        }
+      }
+      
+      print("📊 Places Summary for Conversation $conversationId:");
+      print("   📨 Messages with places: $messagesWithPlaces/${_messages.length}");
+      print("   📍 Total places found: $totalPlaces");
+      if (allPlaces.isNotEmpty) {
+        print("   🏛️ All unique places: ${allPlaces.toSet().toList()}");
+      }
+      print("   " + "=" * 60);
+      
       notifyListeners();
     } catch (e) {
       print("Error loading conversation $conversationId: $e");
       _setError(e.toString());
-      
-      // ❌ LOẠI BỎ: Không tự động tạo conversation mới khi lỗi
-      // scrollToBottom(_scrollController);
-      // await createNewConversation();
       
       // ✅ Thay vào đó, chỉ hiển thị lỗi và để user tự xử lý
       print("⚠️ Failed to load conversation $conversationId, user should handle this manually");
@@ -425,7 +442,8 @@ class MainViewModel extends ChangeNotifier {
   }
 
   // Kiểm tra xem tin nhắn có chứa thông tin địa điểm không
-  bool containsLocationInfo(String message) {
+  bool containsLocationInfo(String message, {List<String>? places}) {
+    // Kiểm tra từ khóa trong message
     final locationKeywords = [
       'địa điểm',
       'location',
@@ -447,7 +465,12 @@ class MainViewModel extends ChangeNotifier {
     ];
 
     final lowerMessage = message.toLowerCase();
-    return locationKeywords.any((keyword) => lowerMessage.contains(keyword));
+    final hasKeywords = locationKeywords.any((keyword) => lowerMessage.contains(keyword));
+    
+    // Kiểm tra xem có địa điểm trong places không
+    final hasPlaces = places != null && places.isNotEmpty;
+    
+    return hasKeywords || hasPlaces;
   }
 
   // Hiển thị popup với các tùy chọn cho tin nhắn du lịch
@@ -545,8 +568,8 @@ class MainViewModel extends ChangeNotifier {
       context,
       MaterialPageRoute(
         builder: (context) => MapView(
-          messageContent: message.messageText,
           conversationId: message.conversationId,
+          messageContent: message.messageText,
         ),
       ),
     );
@@ -554,17 +577,49 @@ class MainViewModel extends ChangeNotifier {
 
   // Tạo lịch trình - Cải thiện logic
   void createItinerary(BuildContext context, Message message) {
-    // TODO: Implement actual itinerary creation logic
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Lập lịch trình'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Tính năng lập lịch trình đang được phát triển.'),
             const SizedBox(height: 16),
             Text('Tin nhắn: ${message.messageText.substring(0, 50)}...'),
+            
+            // Hiển thị danh sách địa điểm nếu có
+            if (message.places!.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Địa điểm được đề xuất:',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...message.places!.map((place) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      color: Colors.blue.shade600,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        place,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              )).toList(),
+            ],
           ],
         ),
         actions: [

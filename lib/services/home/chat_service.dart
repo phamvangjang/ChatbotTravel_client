@@ -62,7 +62,39 @@ class ChatService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonMap = jsonDecode(response.body);
         final List<dynamic> jsonData = jsonMap['data'];
-        return jsonData.map((json) => Message.fromJson(json)).toList();
+        
+        print("📥 Loading ${jsonData.length} messages for conversation $conversationId");
+        
+        return jsonData.map((json) {
+          // Đảm bảo tin nhắn cũ có places = null
+          if (json['places'] == null) {
+            json['places'] = null;
+          }
+          
+          // In thông tin places cho mỗi tin nhắn
+          final messageId = json['message_id'] ?? 'N/A';
+          final sender = json['sender'] ?? 'N/A';
+          final messageText = json['message_text'] ?? '';
+          final places = json['places'];
+          
+          print("📨 Message ID: $messageId | Sender: $sender");
+          print("   📝 Text: ${messageText.length > 50 ? '${messageText.substring(0, 50)}...' : messageText}");
+          print("   🏛️ Places: $places");
+          
+          if (places != null && places is List) {
+            print("   📍 Places count: ${places.length}");
+            for (int i = 0; i < places.length; i++) {
+              print("      ${i + 1}. ${places[i]}");
+            }
+          } else if (places != null) {
+            print("   ⚠️ Places is not a List: ${places.runtimeType}");
+          } else {
+            print("   ❌ No places data");
+          }
+          print("   " + "-" * 50);
+          
+          return Message.fromJson(json);
+        }).toList();
       } else {
         throw Exception('Không thể tải tin nhắn');
       }
@@ -104,12 +136,75 @@ class ChatService {
           throw Exception(responseData['message'] ?? 'Lỗi không xác định');
         }
 
+        // Xử lý travel_data và thêm places vào bot_message
+        final data = responseData['data'] as Map<String, dynamic>;
+        
+        // Xử lý user_message - KHÔNG thêm places vì user không gợi ý địa điểm
+        if (data['user_message'] != null) {
+          final userMessage = data['user_message'] as Map<String, dynamic>;
+          userMessage['places'] = null; // User message không có places
+        }
+        
+        // Xử lý bot_message - Thêm places vì bot gợi ý địa điểm
+        if (data['bot_message'] != null) {
+          final botMessage = data['bot_message'] as Map<String, dynamic>;
+          botMessage['places'] = _extractPlacesFromTravelData(data['travel_data']);
+        }
+
         return responseData;
       } else {
         throw Exception('Lỗi server: ${response.statusCode}');
       }
     } catch (e) {
       throw Exception('Lỗi gửi tin nhắn: $e');
+    }
+  }
+
+  // Helper method để decode Unicode escape sequences
+  String _decodeUnicode(String text) {
+    try {
+      // Decode Unicode escape sequences như \u00ed, \u00e0, etc.
+      return text.replaceAllMapped(
+        RegExp(r'\\u([0-9a-fA-F]{4})'),
+        (match) => String.fromCharCode(int.parse(match.group(1)!, radix: 16)),
+      );
+    } catch (e) {
+      print('Lỗi khi decode Unicode: $e');
+      return text;
+    }
+  }
+
+  // Helper method để trích xuất places từ travel_data
+  List<String>? _extractPlacesFromTravelData(dynamic travelData) {
+    if (travelData == null) return null;
+    
+    try {
+      final travelDataMap = travelData as Map<String, dynamic>;
+      
+      // Kiểm tra success = true
+      if (travelDataMap['success'] != true) return null;
+      
+      // Kiểm tra search_results
+      final searchResults = travelDataMap['search_results'];
+      print("ℹ️ searchResults $searchResults");
+      if (searchResults == null || searchResults is! List) return null;
+      
+      // Trích xuất ten_dia_diem từ search_results và decode Unicode
+      final places = <String>[];
+      for (final result in searchResults) {
+        if (result is Map<String, dynamic> && result['ten_dia_diem'] != null) {
+          final placeName = result['ten_dia_diem'] as String;
+          // Decode Unicode escape sequences
+          final decodedPlaceName = _decodeUnicode(placeName);
+          print("ℹ️ decodedPlaceName: $decodedPlaceName");
+          places.add(decodedPlaceName);
+        }
+      }
+      
+      return places.isNotEmpty ? places : null;
+    } catch (e) {
+      print('Lỗi khi trích xuất places từ travel_data: $e');
+      return null;
     }
   }
 

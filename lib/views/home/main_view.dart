@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobilev2/models/message_model.dart';
 import 'package:mobilev2/providers/user_provider.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/views/home/drawer_view.dart';
@@ -21,11 +22,6 @@ class _MainViewState extends State<MainView> {
   @override
   void initState() {
     super.initState();
-    // ❌ LOẠI BỎ: Không cần gọi initialize() ở đây
-    // vì nó đã được gọi tự động qua ChangeNotifierProxyProvider
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   context.read<MainViewModel>().initialize();
-    // });
   }
 
   @override
@@ -319,7 +315,17 @@ class _MainViewState extends State<MainView> {
         final msg = viewModel.messages[index];
         final isUser = msg.sender.toLowerCase() == 'user';
         final messageContent = msg.messageText;
-        final hasLocationInfo = viewModel.containsLocationInfo(messageContent);
+        
+        // Xử lý an toàn cho places
+        List<String>? places;
+        try {
+          places = msg.places;
+        } catch (e) {
+          print('Lỗi khi truy cập places: $e');
+          places = null;
+        }
+        
+        final hasLocationInfo = viewModel.containsLocationInfo(messageContent, places: places);
 
         return Column(
           crossAxisAlignment:
@@ -372,7 +378,7 @@ class _MainViewState extends State<MainView> {
                               // Nút xem bản đồ
                               ElevatedButton.icon(
                                 onPressed:
-                                    () => viewModel.navigateToMapView(context, msg),
+                                    () => viewModel.navigateToMapView(context, msg.places as Message),
                                 icon: const Icon(Icons.map, size: 16),
                                 label: const Text('Bản đồ'),
                                 style: ElevatedButton.styleFrom(
