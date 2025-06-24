@@ -100,7 +100,10 @@ class MapViewModel extends ChangeNotifier {
 
   // Khởi tạo
   Future<void> initialize(List<String> places, int conversationId, String language) async {
-    _places = places;
+    // Decode Unicode cho places trước khi gán
+    _places = places.map((place) => _decodeUnicode(place)).toList();
+    print("🔍 Decoded places: $_places");
+    
     _conversationId = conversationId;
     _language = language;
     _isLoading = true;
@@ -851,5 +854,74 @@ class MapViewModel extends ChangeNotifier {
     _selectedAttraction = null;
     _polylines = [];
     _updateMarkers();
+  }
+
+  String _decodeUnicode(String text) {
+    try {
+      print("🔍 Original text: $text");
+      
+      // Bước 1: Decode Unicode escape sequences như \u00ed, \u00e0, etc.
+      String decoded = text.replaceAllMapped(
+        RegExp(r'\\u([0-9a-fA-F]{4})'),
+        (match) => String.fromCharCode(int.parse(match.group(1)!, radix: 16)),
+      );
+      print("🔍 After Unicode decode: $decoded");
+      
+      // Bước 2: Fix UTF-8 encoding issues với nhiều trường hợp
+      try {
+        // Kiểm tra các ký tự UTF-8 bị encode sai
+        if (decoded.contains('Ã') || decoded.contains('Â') || 
+            decoded.contains('Æ') || decoded.contains('áº') || 
+            decoded.contains('áº»') || decoded.contains('áº­')) {
+          print("🔍 Detected UTF-8 encoding issues, attempting multiple fixes...");
+          
+          // Thử nhiều cách decode khác nhau
+          String result = decoded;
+          
+          // Cách 1: Latin-1 -> UTF-8
+          try {
+            final bytes1 = latin1.encode(decoded);
+            result = utf8.decode(bytes1, allowMalformed: true);
+            print("🔍 After Latin-1 -> UTF-8: $result");
+          } catch (e) {
+            print('Lỗi Latin-1 -> UTF-8: $e');
+          }
+          
+          // Cách 2: Nếu vẫn còn vấn đề, thử decode lại
+          if (result.contains('Ã') || result.contains('Â') || 
+              result.contains('Æ') || result.contains('áº')) {
+            try {
+              final bytes2 = latin1.encode(result);
+              result = utf8.decode(bytes2, allowMalformed: true);
+              print("🔍 After second Latin-1 -> UTF-8: $result");
+            } catch (e) {
+              print('Lỗi second Latin-1 -> UTF-8: $e');
+            }
+          }
+          
+          // Cách 3: Thử với ISO-8859-1
+          if (result.contains('Ã') || result.contains('Â') || 
+              result.contains('Æ') || result.contains('áº')) {
+            try {
+              final bytes3 = latin1.encode(result);
+              result = utf8.decode(bytes3, allowMalformed: true);
+              print("🔍 After ISO-8859-1 -> UTF-8: $result");
+            } catch (e) {
+              print('Lỗi ISO-8859-1 -> UTF-8: $e');
+            }
+          }
+          
+          decoded = result;
+        }
+      } catch (e) {
+        print('Lỗi khi fix UTF-8 encoding: $e');
+      }
+      
+      print("🔍 Final decoded text: $decoded");
+      return decoded;
+    } catch (e) {
+      print('Lỗi khi decode Unicode: $e');
+      return text;
+    }
   }
 }
