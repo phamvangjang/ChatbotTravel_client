@@ -553,6 +553,8 @@ class MapViewModel extends ChangeNotifier {
     Attraction attraction, {
     required DateTime date,
     required TimeOfDay time,
+    String notes = '',
+    Duration? estimatedDuration,
   }) {
     final dateKey = DateTime(date.year, date.month, date.day);
     final visitTime = DateTime(
@@ -563,7 +565,14 @@ class MapViewModel extends ChangeNotifier {
       time.minute,
     );
 
-    final item = ItineraryItem(attraction: attraction, visitTime: visitTime);
+    // Tạo ItineraryItem với thông tin đầy đủ
+    final item = ItineraryItem(
+      attraction: attraction,
+      visitTime: visitTime,
+      estimatedDuration: estimatedDuration ?? const Duration(hours: 2),
+      notes: notes,
+      createdAt: DateTime.now(),
+    );
 
     if (_dailyItineraries.containsKey(dateKey)) {
       _dailyItineraries[dateKey]!.add(item);
@@ -583,7 +592,20 @@ class MapViewModel extends ChangeNotifier {
       _drawItineraryRoute();
     }
 
-    print('✅ Đã thêm ${attraction.name} vào lịch trình ngày ${date.day}/${date.month}');
+    // In ra thông tin chi tiết
+    print('✅ ĐÃ THÊM VÀO LỊCH TRÌNH:');
+    print('📍 Địa điểm: ${attraction.name}');
+    print('📅 Ngày: ${date.day}/${date.month}/${date.year}');
+    print('⏰ Thời gian: ${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}');
+    print('⏱️ Thời lượng: ${estimatedDuration?.inHours ?? 2} giờ');
+    if (notes.isNotEmpty) {
+      print('📝 Ghi chú: $notes');
+    }
+    print('💰 Giá vé: ${attraction.price != null ? '${attraction.price!.toInt()} VND' : 'Miễn phí'}');
+    print('⭐ Rating: ${attraction.rating}/5');
+    print('📍 Địa chỉ: ${attraction.address}');
+    print('📊 Tổng số địa điểm trong ngày: ${_dailyItineraries[dateKey]?.length ?? 0}');
+    print('-' * 50);
 
     notifyListeners();
   }
@@ -610,6 +632,21 @@ class MapViewModel extends ChangeNotifier {
       if (dateKey == DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day)) {
         _drawItineraryRoute();
       }
+
+      // In ra thông tin chi tiết
+      print('❌ ĐÃ XÓA KHỎI LỊCH TRÌNH:');
+      print('📍 Địa điểm: ${item.attraction.name}');
+      print('📅 Ngày: ${item.visitTime.day}/${item.visitTime.month}/${item.visitTime.year}');
+      print('⏰ Thời gian: ${item.visitTime.hour.toString().padLeft(2, '0')}:${item.visitTime.minute.toString().padLeft(2, '0')}');
+      print('⏱️ Thời lượng: ${item.estimatedDuration.inHours} giờ');
+      if (item.notes.isNotEmpty) {
+        print('📝 Ghi chú: ${item.notes}');
+      }
+      print('💰 Giá vé: ${item.attraction.price != null ? '${item.attraction.price!.toInt()} VND' : 'Miễn phí'}');
+      print('⭐ Rating: ${item.attraction.rating}/5');
+      print('📍 Địa chỉ: ${item.attraction.address}');
+      print('📊 Số địa điểm còn lại trong ngày: ${_dailyItineraries[dateKey]?.length ?? 0}');
+      print('-' * 50);
 
       notifyListeners();
     }
@@ -652,6 +689,25 @@ class MapViewModel extends ChangeNotifier {
     if (newDateKey == DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day)) {
       _drawItineraryRoute();
     }
+
+    // In ra thông tin chi tiết
+    print('🔄 ĐÃ CẬP NHẬT LỊCH TRÌNH:');
+    print('📍 Địa điểm: ${newItem.attraction.name}');
+    print('📅 Ngày cũ: ${oldItem.visitTime.day}/${oldItem.visitTime.month}/${oldItem.visitTime.year}');
+    print('📅 Ngày mới: ${newItem.visitTime.day}/${newItem.visitTime.month}/${newItem.visitTime.year}');
+    print('⏰ Thời gian cũ: ${oldItem.visitTime.hour.toString().padLeft(2, '0')}:${oldItem.visitTime.minute.toString().padLeft(2, '0')}');
+    print('⏰ Thời gian mới: ${newItem.visitTime.hour.toString().padLeft(2, '0')}:${newItem.visitTime.minute.toString().padLeft(2, '0')}');
+    print('⏱️ Thời lượng cũ: ${oldItem.estimatedDuration.inHours} giờ');
+    print('⏱️ Thời lượng mới: ${newItem.estimatedDuration.inHours} giờ');
+    if (oldItem.notes != newItem.notes) {
+      print('📝 Ghi chú cũ: ${oldItem.notes}');
+      print('📝 Ghi chú mới: ${newItem.notes}');
+    }
+    print('💰 Giá vé: ${newItem.attraction.price != null ? '${newItem.attraction.price!.toInt()} VND' : 'Miễn phí'}');
+    print('⭐ Rating: ${newItem.attraction.rating}/5');
+    print('📍 Địa chỉ: ${newItem.attraction.address}');
+    print('📊 Số địa điểm trong ngày mới: ${_dailyItineraries[newDateKey]?.length ?? 0}');
+    print('-' * 50);
 
     notifyListeners();
   }

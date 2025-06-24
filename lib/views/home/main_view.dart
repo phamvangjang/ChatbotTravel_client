@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobilev2/models/message_model.dart';
 import 'package:mobilev2/providers/user_provider.dart';
 import 'package:mobilev2/viewmodels/home/main_viewmodel.dart';
 import 'package:mobilev2/views/home/drawer_view.dart';

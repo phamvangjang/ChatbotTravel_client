@@ -9,17 +9,20 @@ import 'package:printing/printing.dart';
 
 import '../../helpers/hcm_map_helper.dart';
 import '../../models/itinerary_item.dart';
+import '../../services/itinerary_service.dart';
 
 class SaveItineraryDialog extends StatelessWidget {
   final List<ItineraryItem> itinerary;
   final DateTime selectedDate;
   final Future<bool> Function() onSave;
+  final int? userId;
 
   const SaveItineraryDialog({
     super.key,
     required this.itinerary,
     required this.selectedDate,
     required this.onSave,
+    this.userId,
   });
 
   @override
@@ -48,6 +51,59 @@ class SaveItineraryDialog extends StatelessWidget {
             style: const TextStyle(fontSize: 16),
           ),
           const SizedBox(height: 16),
+          
+          // Thông tin user nếu đã đăng nhập
+          if (userId != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.person, color: Colors.green.shade600, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Đăng nhập với User ID: $userId',
+                    style: TextStyle(
+                      color: Colors.green.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ] else ...[
+            // Cảnh báo nếu chưa đăng nhập
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.orange.shade600, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Chưa đăng nhập - Lịch trình sẽ được lưu cục bộ',
+                      style: TextStyle(
+                        color: Colors.orange.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -129,6 +185,11 @@ class SaveItineraryDialog extends StatelessWidget {
   Future<void> _handleSaveAndPDF(BuildContext context) async {
     // In ra thông tin khi bắt đầu lưu
     print('💾 BẮT ĐẦU LƯU LỊCH TRÌNH...');
+    if (userId != null) {
+      print('👤 User ID: $userId');
+    } else {
+      print('⚠️ Chưa đăng nhập - Lưu cục bộ');
+    }
     print('📅 Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}');
     print('📍 Số địa điểm: ${itinerary.length}');
     print('⏰ Thời gian: ${_getStartTime()} - ${_getEndTime()}');
@@ -140,24 +201,42 @@ class SaveItineraryDialog extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder:
-          (context) => const AlertDialog(
+          (context) => AlertDialog(
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Đang lưu vào database...'),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  userId != null 
+                    ? 'Đang lưu vào database...'
+                    : 'Đang lưu cục bộ...',
+                ),
               ],
             ),
           ),
     );
 
     try {
-      await Future.delayed(const Duration(milliseconds: 200));
+      // Gọi hàm lưu database nếu có user ID, hoặc gọi onSave() nếu không có
+      bool success;
+      
+      if (userId != null) {
+        // Có user ID - lưu vào database
+        final itineraryService = ItineraryService();
+        success = await itineraryService.saveItinerary(
+          itinerary: itinerary,
+          selectedDate: selectedDate,
+          userId: userId!,
+        );
+      } else {
+        // Không có user ID - gọi onSave() (có thể lưu cục bộ)
+        success = await onSave();
+      }
+      
       if(context.mounted){
         Navigator.of(context).pop();
       }
-      final success = true;
 
       if (success) {
         if (context.mounted) {
@@ -184,15 +263,32 @@ class SaveItineraryDialog extends StatelessWidget {
         if (context.mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Lịch trình đã lưu và PDF đã tải về'),
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      userId != null 
+                        ? '✅ Lịch trình đã lưu vào database và PDF đã tải về'
+                        : '✅ Lịch trình đã lưu cục bộ và PDF đã tải về',
+                    ),
+                  ),
+                ],
+              ),
               backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
+              duration: const Duration(seconds: 3),
             ),
           );
           
           // In ra thông báo thành công
           print('✅ LỊCH TRÌNH ĐÃ LƯU THÀNH CÔNG!');
+          if (userId != null) {
+            print('💾 Đã lưu vào database với User ID: $userId');
+          } else {
+            print('💾 Đã lưu cục bộ (chưa đăng nhập)');
+          }
           print('📄 PDF đã được tạo và tải về');
           print('📅 Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}');
           print('📍 Số địa điểm: ${itinerary.length}');
@@ -203,8 +299,20 @@ class SaveItineraryDialog extends StatelessWidget {
           if (context.mounted) {
             Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('❌ Lỗi khi lưu vào database'),
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        userId != null 
+                          ? '❌ Lỗi khi lưu vào database'
+                          : '❌ Lỗi khi lưu cục bộ',
+                      ),
+                    ),
+                  ],
+                ),
                 backgroundColor: Colors.red,
               ),
             );
@@ -216,7 +324,19 @@ class SaveItineraryDialog extends StatelessWidget {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Lỗi: ${e.toString()}'),
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    userId != null 
+                      ? '❌ Lỗi kết nối database: ${e.toString()}'
+                      : '❌ Lỗi lưu cục bộ: ${e.toString()}',
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -888,6 +1008,7 @@ class SaveItineraryDialog extends StatelessWidget {
     required List<ItineraryItem> itinerary,
     required DateTime selectedDate,
     required Future<bool> Function() onSave,
+    int? userId,
   }) {
     return showDialog<bool>(
       context: context,
@@ -897,6 +1018,7 @@ class SaveItineraryDialog extends StatelessWidget {
             itinerary: itinerary,
             selectedDate: selectedDate,
             onSave: onSave,
+            userId: userId,
           ),
     );
   }
@@ -980,6 +1102,9 @@ class SaveItineraryDialog extends StatelessWidget {
     print('=' * 50);
     print('📋 THÔNG TIN LỊCH TRÌNH DU LỊCH');
     print('=' * 50);
+    if (userId != null) {
+      print('👤 User ID: $userId');
+    }
     print('📅 Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}');
     print('📍 Số địa điểm: ${itinerary.length}');
     print('⏰ Thời gian bắt đầu: ${_getStartTime()}');
@@ -995,6 +1120,12 @@ class SaveItineraryDialog extends StatelessWidget {
       for (int i = 0; i < itinerary.length; i++) {
         final item = itinerary[i];
         print('${i + 1}. ${item.attraction.name}');
+        if (item.id != null) {
+          print('   🆔 ID: ${item.id}');
+        }
+        if (item.userId != null) {
+          print('   👤 User ID: ${item.userId}');
+        }
         print('   📍 Địa chỉ: ${item.attraction.address}');
         print('   ⏰ Thời gian: ${item.visitTime.hour.toString().padLeft(2, '0')}:${item.visitTime.minute.toString().padLeft(2, '0')}');
         print('   ⏱️ Thời lượng: ${_formatDuration(item.estimatedDuration)}');
@@ -1007,6 +1138,9 @@ class SaveItineraryDialog extends StatelessWidget {
         }
         print('   🏷️ Danh mục: ${item.attraction.category}');
         print('   🏷️ Tags: ${item.attraction.tags.join(', ')}');
+        if (item.createdAt != null) {
+          print('   📅 Tạo lúc: ${item.createdAt!.day}/${item.createdAt!.month}/${item.createdAt!.year} ${item.createdAt!.hour}:${item.createdAt!.minute}');
+        }
         print('');
       }
       

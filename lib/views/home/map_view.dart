@@ -3,8 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../../models/attraction_model.dart';
 import '../../models/itinerary_item.dart';
+import '../../providers/user_provider.dart';
 import '../../viewmodels/home/map_viewmodel.dart';
 import '../widgets/save_itinerary_dialog.dart';
 import '../widgets/attraction_info_card.dart';
@@ -480,6 +480,9 @@ class _MapTab extends StatelessWidget {
   void _showAddToItineraryDialog(BuildContext context, MapViewModel viewModel) {
     DateTime selectedDate = viewModel.selectedDate;
     TimeOfDay selectedTime = const TimeOfDay(hour: 9, minute: 0);
+    Duration selectedDuration = const Duration(hours: 2);
+    String notes = '';
+    final notesController = TextEditingController();
 
     showDialog(
       context: context,
@@ -487,71 +490,217 @@ class _MapTab extends StatelessWidget {
           (dialogContext) => StatefulBuilder(
             builder: (context, setState) {
               return AlertDialog(
-                title: const Text('Thêm vào lịch trình'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
+                title: Row(
                   children: [
-                    ListTile(
-                      leading: const Icon(Icons.calendar_today),
-                      title: Text(
-                        'Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                      ),
-                      onTap: () async {
-                        final date = await showDatePicker(
-                          context: context,
-                          initialDate: selectedDate,
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(
-                            const Duration(days: 365),
-                          ),
-                        );
-                        if (date != null) {
-                          setState(() {
-                            selectedDate = date;
-                          });
-                        }
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.access_time),
-                      title: Text('Giờ: ${selectedTime.format(context)}'),
-                      onTap: () async {
-                        final time = await showTimePicker(
-                          context: context,
-                          initialTime: selectedTime,
-                        );
-                        if (time != null) {
-                          setState(() {
-                            selectedTime = time;
-                          });
-                        }
-                      },
-                    ),
+                    Icon(Icons.add_location, color: Colors.green.shade600),
+                    const SizedBox(width: 8),
+                    const Text('Thêm vào lịch trình'),
                   ],
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Thông tin địa điểm
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.location_on, color: Colors.blue.shade600, size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Thông tin địa điểm',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              viewModel.selectedAttraction!.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            Text(
+                              viewModel.selectedAttraction!.address,
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(Icons.star, color: Colors.orange.shade600, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${viewModel.selectedAttraction!.rating}/5',
+                                  style: TextStyle(color: Colors.orange.shade600, fontSize: 12),
+                                ),
+                                if (viewModel.selectedAttraction!.price != null) ...[
+                                  const SizedBox(width: 12),
+                                  Icon(Icons.attach_money, color: Colors.green.shade600, size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${viewModel.selectedAttraction!.price!.toInt()} VND',
+                                    style: TextStyle(color: Colors.green.shade600, fontSize: 12),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Chọn ngày
+                      ListTile(
+                        leading: Icon(Icons.calendar_today, color: Colors.blue.shade600),
+                        title: Text(
+                          'Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                        ),
+                        subtitle: const Text('Chọn ngày tham quan'),
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365),
+                            ),
+                          );
+                          if (date != null) {
+                            setState(() {
+                              selectedDate = date;
+                            });
+                          }
+                        },
+                      ),
+                      
+                      // Chọn giờ
+                      ListTile(
+                        leading: Icon(Icons.access_time, color: Colors.blue.shade600),
+                        title: Text('Giờ: ${selectedTime.format(context)}'),
+                        subtitle: const Text('Chọn giờ bắt đầu'),
+                        onTap: () async {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: selectedTime,
+                          );
+                          if (time != null) {
+                            setState(() {
+                              selectedTime = time;
+                            });
+                          }
+                        },
+                      ),
+                      
+                      // Chọn thời lượng
+                      ListTile(
+                        leading: Icon(Icons.timer, color: Colors.green.shade600),
+                        title: Text('Thời lượng: ${selectedDuration.inHours} giờ ${selectedDuration.inMinutes % 60} phút'),
+                        subtitle: const Text('Thời gian dự kiến tham quan'),
+                        onTap: () async {
+                          final hours = await showDialog<int>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Chọn thời lượng'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('Số giờ:'),
+                                  DropdownButton<int>(
+                                    value: selectedDuration.inHours,
+                                    items: List.generate(8, (index) => index + 1)
+                                        .map((hour) => DropdownMenuItem(
+                                              value: hour,
+                                              child: Text('$hour giờ'),
+                                            ))
+                                        .toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        selectedDuration = Duration(hours: value!);
+                                      });
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      
+                      // Ghi chú
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: notesController,
+                        decoration: InputDecoration(
+                          labelText: 'Ghi chú (tùy chọn)',
+                          hintText: 'Nhập ghi chú cho địa điểm này...',
+                          prefixIcon: Icon(Icons.note, color: Colors.orange.shade600),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.orange.shade600),
+                          ),
+                        ),
+                        maxLines: 3,
+                        onChanged: (value) {
+                          notes = value;
+                        },
+                      ),
+                    ],
+                  ),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogContext),
                     child: const Text('Hủy'),
                   ),
-                  ElevatedButton(
+                  ElevatedButton.icon(
                     onPressed: () {
                       viewModel.addToItinerary(
                         viewModel.selectedAttraction!,
                         date: selectedDate,
                         time: selectedTime,
+                        notes: notes,
+                        estimatedDuration: selectedDuration,
                       );
                       Navigator.pop(dialogContext);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(
-                            'Đã thêm ${viewModel.selectedAttraction!.name} vào lịch trình',
+                          content: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.white),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Đã thêm ${viewModel.selectedAttraction!.name} vào lịch trình',
+                                ),
+                              ),
+                            ],
                           ),
                           backgroundColor: Colors.green,
+                          duration: const Duration(seconds: 3),
                         ),
                       );
                     },
-                    child: const Text('Thêm'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Thêm vào lịch trình'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade600,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
                 ],
               );
@@ -1125,30 +1274,20 @@ class _TimelineTab extends StatelessWidget {
                       viewModel.todayItinerary.isEmpty
                           ? null
                           : () async {
-                            /*
-                            final success = await viewModel.saveItinerary();
-                            if (!context.mounted) return;
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  success
-                                      ? 'Lịch trình đã được lưu'
-                                      : 'Lỗi khi lưu lịch trình',
-                                ),
-                                backgroundColor:
-                                    success ? Colors.green : Colors.red,
-                              ),
-                            );
-                             */
                             // Show confirmation dialog
+                            final userProvider = Provider.of<UserProvider>(context, listen: false);
+                            final currentUser = userProvider.user;
+                            
                             await SaveItineraryDialog.show(
                               context,
                               itinerary: viewModel.todayItinerary,
-                              // Dữ liệu từ Timeline
                               selectedDate: viewModel.selectedDate,
-                              onSave:
-                                  () => viewModel.saveItinerary(), // Chỉ lưu DB
+                              onSave: () async {
+                                // TODO: Implement database saving in SaveItineraryDialog
+                                await Future.delayed(const Duration(seconds: 1));
+                                return true;
+                              },
+                              userId: currentUser?.id, // Lấy user ID từ provider
                             );
                           },
                   icon: const Icon(Icons.save),
