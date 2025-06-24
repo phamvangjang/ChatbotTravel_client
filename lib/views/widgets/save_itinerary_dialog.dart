@@ -24,6 +24,9 @@ class SaveItineraryDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // In ra thông tin lịch trình vào terminal
+    _printItineraryInfo();
+    
     return AlertDialog(
       title: const Row(
         children: [
@@ -124,6 +127,14 @@ class SaveItineraryDialog extends StatelessWidget {
   }
 
   Future<void> _handleSaveAndPDF(BuildContext context) async {
+    // In ra thông tin khi bắt đầu lưu
+    print('💾 BẮT ĐẦU LƯU LỊCH TRÌNH...');
+    print('📅 Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}');
+    print('📍 Số địa điểm: ${itinerary.length}');
+    print('⏰ Thời gian: ${_getStartTime()} - ${_getEndTime()}');
+    print('💰 Tổng chi phí: ${_formatPrice(_getTotalPrice())} VND');
+    print('-' * 40);
+    
     // Show loading dialog
     showDialog(
       context: context,
@@ -179,6 +190,15 @@ class SaveItineraryDialog extends StatelessWidget {
               duration: Duration(seconds: 3),
             ),
           );
+          
+          // In ra thông báo thành công
+          print('✅ LỊCH TRÌNH ĐÃ LƯU THÀNH CÔNG!');
+          print('📄 PDF đã được tạo và tải về');
+          print('📅 Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}');
+          print('📍 Số địa điểm: ${itinerary.length}');
+          print('⏰ Thời gian: ${_getStartTime()} - ${_getEndTime()}');
+          print('💰 Tổng chi phí: ${_formatPrice(_getTotalPrice())} VND');
+          print('=' * 50);
         } else {
           if (context.mounted) {
             Navigator.of(context).pop();
@@ -954,5 +974,62 @@ class SaveItineraryDialog extends StatelessWidget {
     } else {
       return '$minutes phút';
     }
+  }
+
+  void _printItineraryInfo() {
+    print('=' * 50);
+    print('📋 THÔNG TIN LỊCH TRÌNH DU LỊCH');
+    print('=' * 50);
+    print('📅 Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}');
+    print('📍 Số địa điểm: ${itinerary.length}');
+    print('⏰ Thời gian bắt đầu: ${_getStartTime()}');
+    print('⏰ Thời gian kết thúc: ${_getEndTime()}');
+    print('⏱️ Tổng thời gian: ${_getTotalDuration()}');
+    print('💰 Tổng chi phí: ${_formatPrice(_getTotalPrice())} VND');
+    print('');
+    
+    if (itinerary.isNotEmpty) {
+      print('🗺️ DANH SÁCH ĐỊA ĐIỂM:');
+      print('-' * 50);
+      
+      for (int i = 0; i < itinerary.length; i++) {
+        final item = itinerary[i];
+        print('${i + 1}. ${item.attraction.name}');
+        print('   📍 Địa chỉ: ${item.attraction.address}');
+        print('   ⏰ Thời gian: ${item.visitTime.hour.toString().padLeft(2, '0')}:${item.visitTime.minute.toString().padLeft(2, '0')}');
+        print('   ⏱️ Thời lượng: ${_formatDuration(item.estimatedDuration)}');
+        print('   ⭐ Rating: ${item.attraction.rating}/5');
+        if (item.attraction.price != null) {
+          print('   💰 Giá: ${_formatPrice(item.attraction.price!)} VND');
+        }
+        if (item.notes.isNotEmpty) {
+          print('   📝 Ghi chú: ${item.notes}');
+        }
+        print('   🏷️ Danh mục: ${item.attraction.category}');
+        print('   🏷️ Tags: ${item.attraction.tags.join(', ')}');
+        print('');
+      }
+      
+      print('📊 THỐNG KÊ:');
+      print('-' * 30);
+      print('• Địa điểm có giá: ${itinerary.where((item) => item.attraction.price != null).length}/${itinerary.length}');
+      print('• Địa điểm có ghi chú: ${itinerary.where((item) => item.notes.isNotEmpty).length}/${itinerary.length}');
+      print('• Rating trung bình: ${_getAverageRating().toStringAsFixed(1)}/5');
+      print('• Địa điểm miễn phí: ${itinerary.where((item) => item.attraction.price == null || item.attraction.price == 0).length}');
+      print('• Địa điểm có phí: ${itinerary.where((item) => item.attraction.price != null && item.attraction.price! > 0).length}');
+    } else {
+      print('❌ Không có địa điểm nào trong lịch trình!');
+    }
+    
+    print('=' * 50);
+  }
+  
+  double _getAverageRating() {
+    if (itinerary.isEmpty) return 0.0;
+    final totalRating = itinerary.fold<double>(
+      0.0,
+      (sum, item) => sum + item.attraction.rating,
+    );
+    return totalRating / itinerary.length;
   }
 }
