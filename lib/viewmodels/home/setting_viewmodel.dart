@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/itinerary_item.dart';
+import '../../models/itinerary.dart';
 import '../../providers/user_provider.dart';
 import '../../services/auth/auth_service.dart';
 import '../../services/itinerary_service.dart';
@@ -13,12 +13,12 @@ class SettingViewModel extends ChangeNotifier {
   
   bool _isLoggingOut = false;
   bool _isLoadingItineraries = false;
-  List<ItineraryItem> _savedItineraries = [];
+  List<Itinerary> _savedItineraries = [];
   String? _errorMessage;
 
   bool get isLoggingOut => _isLoggingOut;
   bool get isLoadingItineraries => _isLoadingItineraries;
-  List<ItineraryItem> get savedItineraries => _savedItineraries;
+  List<Itinerary> get savedItineraries => _savedItineraries;
   String? get errorMessage => _errorMessage;
 
   // Lấy danh sách lịch trình đã lưu
@@ -58,30 +58,25 @@ class SettingViewModel extends ChangeNotifier {
   }
 
   // Nhóm lịch trình theo ngày
-  Map<DateTime, List<ItineraryItem>> get itinerariesByDate {
-    final Map<DateTime, List<ItineraryItem>> grouped = {};
+  Map<DateTime, List<Itinerary>> get itinerariesByDate {
+    final Map<DateTime, List<Itinerary>> grouped = {};
     
-    for (final item in _savedItineraries) {
-      final dateKey = DateTime(
-        item.visitTime.year,
-        item.visitTime.month,
-        item.visitTime.day,
-      );
-      
+    for (final itinerary in _savedItineraries) {
+      // Parse selectedDate sang DateTime
+      final dateKey = DateTime.tryParse(itinerary.selectedDate) ?? DateTime(2000);
       if (grouped.containsKey(dateKey)) {
-        grouped[dateKey]!.add(item);
+        grouped[dateKey]!.add(itinerary);
       } else {
-        grouped[dateKey] = [item];
+        grouped[dateKey] = [itinerary];
       }
     }
 
     // Sắp xếp các ngày theo thứ tự mới nhất trước
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
     
-    final Map<DateTime, List<ItineraryItem>> sortedGrouped = {};
+    final Map<DateTime, List<Itinerary>> sortedGrouped = {};
     for (final key in sortedKeys) {
-      // Sắp xếp các item trong mỗi ngày theo thời gian
-      grouped[key]!.sort((a, b) => a.visitTime.compareTo(b.visitTime));
+      // Không cần sort theo visitTime nữa
       sortedGrouped[key] = grouped[key]!;
     }
 
@@ -89,20 +84,30 @@ class SettingViewModel extends ChangeNotifier {
   }
 
   // Tính tổng thời gian của lịch trình
-  Duration getTotalDuration(List<ItineraryItem> items) {
-    return items.fold<Duration>(
-      Duration.zero,
-      (total, item) => total + item.estimatedDuration,
-    );
-  }
+  Duration getTotalDuration(List<Itinerary> itineraries) {
+  return itineraries.fold<Duration>(
+    Duration.zero,
+    (total, itinerary) =>
+      total +
+      itinerary.items.fold<Duration>(
+        Duration.zero,
+        (itemTotal, item) => itemTotal + item.estimatedDuration,
+      ),
+  );
+}
 
   // Tính tổng chi phí của lịch trình
-  double getTotalCost(List<ItineraryItem> items) {
-    return items.fold<double>(
-      0.0,
-      (total, item) => total + (item.attraction.price ?? 0.0),
-    );
-  }
+  double getTotalCost(List<Itinerary> itineraries) {
+  return itineraries.fold<double>(
+    0.0,
+    (total, itinerary) =>
+      total +
+      itinerary.items.fold<double>(
+        0.0,
+        (itemTotal, item) => itemTotal + (item.attraction.price ?? 0.0),
+      ),
+  );
+}
 
   // Format thời gian
   String formatTime(DateTime time) {

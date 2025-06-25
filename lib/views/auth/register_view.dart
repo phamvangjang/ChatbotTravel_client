@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mobilev2/viewmodels/auth/login_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/register_viewmodel.dart';
 import 'package:provider/provider.dart';
 

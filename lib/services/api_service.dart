@@ -27,6 +27,7 @@ class ApiService {
   static String get searchAttractionsUrl => "$_baseUrl/map/attractions/search";
 
   static String get createItineraryUrl => "$_baseUrl/itinerary/create";
+  static String getItineraryByUserIdUrl(int userId) => "$_baseUrl/itinerary/list?user_id=$userId";
 }
 /*
 # Kiểm tra thiết bị

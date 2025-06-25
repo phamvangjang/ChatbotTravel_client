@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/itinerary_item.dart';
+import '../models/itinerary.dart';
 import 'api_service.dart';
 
 class ItineraryService {
@@ -60,20 +61,21 @@ class ItineraryService {
   }
 
   // Lấy lịch trình của user
-  Future<List<ItineraryItem>> getUserItineraries(int userId) async {
+  Future<List<Itinerary>> getUserItineraries(int userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/users/$userId/itineraries'),
+        Uri.parse(ApiService.getItineraryByUserIdUrl(userId)),
         headers: {
           'Content-Type': 'application/json',
         },
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => ItineraryItem.fromJson(json)).toList();
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        final List<dynamic> data = jsonResponse['data'] ?? [];
+        return data.map((e) => Itinerary.fromJson(e)).toList();
       } else {
-        print('❌ Lỗi khi lấy lịch trình: ${response.statusCode}');
+        print('❌ Lỗi khi lấy lịch trình: [31m${response.statusCode}[0m');
         return [];
       }
     } catch (e) {

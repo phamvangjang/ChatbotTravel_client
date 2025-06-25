@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
 import '../../viewmodels/home/setting_viewmodel.dart';
-import '../../models/itinerary_item.dart';
 
 class SettingView extends StatefulWidget {
   const SettingView({super.key});
@@ -30,7 +29,7 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
       final user = Provider.of<UserProvider>(context, listen: false).user;
       if (user?.id != null) {
         Provider.of<SettingViewModel>(context, listen: false)
-            .loadSavedItineraries(user!.id!);
+            .loadSavedItineraries(user!.id);
         _hasLoadedData = true;
       }
     }
@@ -496,9 +495,9 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                                 // Xóa tất cả items trong ngày này
                                 for (final item in items) {
                                   if (item.id != null) {
-                                    final shouldDelete = await settingViewModel.showDeleteItineraryConfirmation(context, item.id!);
+                                    final shouldDelete = await settingViewModel.showDeleteItineraryConfirmation(context, item.id);
                                     if (shouldDelete) {
-                                      await settingViewModel.deleteItinerary(item.id!);
+                                      await settingViewModel.deleteItinerary(item.id);
                                     }
                                   }
                                 }
@@ -527,79 +526,92 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: items.length,
-                      itemBuilder: (context, itemIndex) {
-                        final item = items[itemIndex];
-                        final isLast = itemIndex == items.length - 1;
-                        
+                      itemBuilder: (context, itineraryIndex) {
+                        final itinerary = items[itineraryIndex];
                         return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: Colors.blue.shade100,
-                                child: Text(
-                                  '${itemIndex + 1}',
-                                  style: TextStyle(
-                                    color: Colors.blue.shade600,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              title: Text(
-                                item.attraction.name,
-                                style: const TextStyle(fontWeight: FontWeight.w500),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '${settingViewModel.formatTime(item.visitTime)} - ${settingViewModel.formatDuration(item.estimatedDuration)}',
-                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                                  ),
-                                  if (item.notes.isNotEmpty)
-                                    Text(
-                                      item.notes,
-                                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                            // Hiển thị các điểm đến trong itinerary
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: itinerary.items.length,
+                              itemBuilder: (context, itemIndex) {
+                                final item = itinerary.items[itemIndex];
+                                final isLast = itemIndex == itinerary.items.length - 1;
+                                return Column(
+                                  children: [
+                                    ListTile(
+                                      leading: CircleAvatar(
+                                        backgroundColor: Colors.blue.shade100,
+                                        child: Text(
+                                          '${itemIndex + 1}',
+                                          style: TextStyle(
+                                            color: Colors.blue.shade600,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      title: Text(
+                                        item.attraction.name,
+                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${settingViewModel.formatTime(item.visitTime)} - ${settingViewModel.formatDuration(item.estimatedDuration)}',
+                                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                          ),
+                                          if (item.notes.isNotEmpty)
+                                            Text(
+                                              item.notes,
+                                              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          if (item.attraction.price != null)
+                                            Text(
+                                              '${settingViewModel.formatPrice(item.attraction.price!)} VND',
+                                              style: TextStyle(fontSize: 11, color: Colors.green.shade600),
+                                            ),
+                                        ],
+                                      ),
+                                      trailing: item.id != null ? PopupMenuButton<String>(
+                                        onSelected: (value) async {
+                                          if (value == 'delete' && item.id != null) {
+                                            final shouldDelete = await settingViewModel.showDeleteItineraryConfirmation(context, item.id!);
+                                            if (shouldDelete) {
+                                              await settingViewModel.deleteItinerary(item.id!);
+                                            }
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                            value: 'delete',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.delete, color: Colors.red),
+                                                SizedBox(width: 8),
+                                                Text('Xóa'),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                        child: Icon(Icons.more_vert, size: 16),
+                                      ) : null,
                                     ),
-                                  if (item.attraction.price != null)
-                                    Text(
-                                      '${settingViewModel.formatPrice(item.attraction.price!)} VND',
-                                      style: TextStyle(fontSize: 11, color: Colors.green.shade600),
-                                    ),
-                                ],
-                              ),
-                              trailing: item.id != null ? PopupMenuButton<String>(
-                                onSelected: (value) async {
-                                  if (value == 'delete' && item.id != null) {
-                                    final shouldDelete = await settingViewModel.showDeleteItineraryConfirmation(context, item.id!);
-                                    if (shouldDelete) {
-                                      await settingViewModel.deleteItinerary(item.id!);
-                                    }
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'delete',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.delete, color: Colors.red),
-                                        SizedBox(width: 8),
-                                        Text('Xóa'),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                                child: Icon(Icons.more_vert, size: 16),
-                              ) : null,
+                                    if (!isLast)
+                                      Divider(
+                                        height: 1,
+                                        indent: 56,
+                                        endIndent: 16,
+                                        color: Colors.grey.shade200,
+                                      ),
+                                  ],
+                                );
+                              },
                             ),
-                            if (!isLast)
-                              Divider(
-                                height: 1,
-                                indent: 56,
-                                endIndent: 16,
-                                color: Colors.grey.shade200,
-                              ),
                           ],
                         );
                       },
