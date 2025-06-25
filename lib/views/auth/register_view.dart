@@ -14,6 +14,7 @@ class _RegisterViewState extends State<RegisterView> {
     return ChangeNotifierProvider(
       create: (_) => RegisterViewModel(),
       child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(

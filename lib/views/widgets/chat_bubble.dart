@@ -186,7 +186,7 @@ class _ChatBubbleState extends State<ChatBubble> {
           // Actions cho tin nhắn bot
           if (widget.showActions && !widget.isUser)
             Padding(
-              padding: const EdgeInsets.only(top: 4, left: 12),
+              padding: const EdgeInsets.only(top: 0, left: 2),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

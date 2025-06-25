@@ -114,7 +114,7 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
     return Consumer<MainViewModel>(
       builder: (context, viewModel, child) {
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.white,
             boxShadow: [
@@ -192,7 +192,7 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
               ),
               child: IconButton(
                 onPressed: _cancelVoiceRecording,
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white, size: 20),
                 tooltip: 'Hủy ghi âm',
               ),
             ),
@@ -241,8 +241,8 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
                 icon:
                     viewModel.isSending
                         ? const SizedBox(
-                          width: 20,
-                          height: 20,
+                          width: 18,
+                          height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
@@ -250,7 +250,7 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
                             ),
                           ),
                         )
-                        : const Icon(Icons.send, color: Colors.white),
+                        : const Icon(Icons.send, color: Colors.white, size: 20),
                 tooltip: 'Gửi tin nhắn giọng nói',
               ),
             ),
@@ -275,7 +275,7 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
           child: Container(
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: TextField(
               controller: _controller,
@@ -284,11 +284,12 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
                 hintText: 'Nhập tin nhắn...',
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
+                  horizontal: 16,
+                  vertical: 10,
                 ),
               ),
-              maxLines: null,
+              maxLines: 3,
+              minLines: 1,
               textCapitalization: TextCapitalization.sentences,
               onSubmitted: (_) => _sendMessage(),
             ),
@@ -307,7 +308,7 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
                 widget.isEnabled && !viewModel.isSending
                     ? _startVoiceRecording
                     : null,
-            icon: const Icon(Icons.mic, color: Colors.white),
+            icon: const Icon(Icons.mic, color: Colors.white, size: 20),
             tooltip: 'Ghi âm tin nhắn',
           ),
         ),
@@ -331,14 +332,14 @@ class _ChatInputState extends State<ChatInput> with TickerProviderStateMixin {
             icon:
                 viewModel.isSending
                     ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                    : const Icon(Icons.send, color: Colors.white),
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                    : const Icon(Icons.send, color: Colors.white, size: 20),
           ),
         ),
       ],
