@@ -420,7 +420,7 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
             itemCount: itinerariesByDate.length,
             itemBuilder: (context, index) {
               final date = itinerariesByDate.keys.elementAt(index);
-              final items = itinerariesByDate[date]!;
+              final itineraries = itinerariesByDate[date]!;
               
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -474,14 +474,14 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                                     Icon(Icons.access_time, size: 14, color: Colors.blue.shade600),
                                     const SizedBox(width: 4),
                                     Text(
-                                      settingViewModel.formatDuration(settingViewModel.getTotalDuration(items)),
+                                      settingViewModel.formatDuration(settingViewModel.getTotalDuration(itineraries)),
                                       style: TextStyle(fontSize: 12, color: Colors.blue.shade600),
                                     ),
                                     const SizedBox(width: 16),
                                     Icon(Icons.attach_money, size: 14, color: Colors.blue.shade600),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '${settingViewModel.formatPrice(settingViewModel.getTotalCost(items))} VND',
+                                      '${settingViewModel.formatPrice(settingViewModel.getTotalCost(itineraries))} VND',
                                       style: TextStyle(fontSize: 12, color: Colors.blue.shade600),
                                     ),
                                   ],
@@ -492,12 +492,12 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                           PopupMenuButton<String>(
                             onSelected: (value) async {
                               if (value == 'delete') {
-                                // Xóa tất cả items trong ngày này
-                                for (final item in items) {
+                                // Xóa tất cả itineraries trong ngày này
+                                for (final item in itineraries) {
                                   if (item.id != null) {
                                     final shouldDelete = await settingViewModel.showDeleteItineraryConfirmation(context, item.id);
                                     if (shouldDelete) {
-                                      await settingViewModel.deleteItinerary(item.id);
+                                      await settingViewModel.deleteItinerary(item.id, user.id!);
                                     }
                                   }
                                 }
@@ -525,9 +525,9 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: items.length,
+                      itemCount: itineraries.length,
                       itemBuilder: (context, itineraryIndex) {
-                        final itinerary = items[itineraryIndex];
+                        final itinerary = itineraries[itineraryIndex];
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -582,7 +582,7 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                                           if (value == 'delete' && item.id != null) {
                                             final shouldDelete = await settingViewModel.showDeleteItineraryConfirmation(context, item.id!);
                                             if (shouldDelete) {
-                                              await settingViewModel.deleteItinerary(item.id!);
+                                              await settingViewModel.deleteItinerary(item.id!, user.id!);
                                             }
                                           }
                                         },

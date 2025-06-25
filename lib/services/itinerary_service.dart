@@ -5,7 +5,6 @@ import '../models/itinerary.dart';
 import 'api_service.dart';
 
 class ItineraryService {
-  static const String baseUrl = 'http://localhost:5000/api'; // TODO: Update with actual API URL
 
   // Lưu lịch trình vào database
   Future<bool> saveItinerary({
@@ -15,16 +14,17 @@ class ItineraryService {
   }) async {
     try {
       print('💾 Đang gửi dữ liệu lên server...');
-      
+
       // Chuẩn bị dữ liệu để gửi lên server
-      final List<Map<String, dynamic>> itineraryData = itinerary.map((item) {
-        return {
-          'attraction_id': item.attraction.id,
-          'visit_time': item.visitTime.toIso8601String(),
-          'estimated_duration': item.estimatedDuration.inMinutes,
-          'notes': item.notes,
-        };
-      }).toList();
+      final List<Map<String, dynamic>> itineraryData =
+          itinerary.map((item) {
+            return {
+              'attraction_id': item.attraction.id,
+              'visit_time': item.visitTime.toIso8601String(),
+              'estimated_duration': item.estimatedDuration.inMinutes,
+              'notes': item.notes,
+            };
+          }).toList();
 
       final requestData = {
         'user_id': userId,
@@ -38,9 +38,7 @@ class ItineraryService {
       // Gửi request lên server
       final response = await http.post(
         Uri.parse(ApiService.createItineraryUrl),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: json.encode(requestData),
       );
 
@@ -65,9 +63,7 @@ class ItineraryService {
     try {
       final response = await http.get(
         Uri.parse(ApiService.getItineraryByUserIdUrl(userId)),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
@@ -85,13 +81,11 @@ class ItineraryService {
   }
 
   // Xóa lịch trình
-  Future<bool> deleteItinerary(int itineraryId) async {
+  Future<bool> deleteItinerary(int itineraryId, int userId) async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/itineraries/$itineraryId'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        Uri.parse(ApiService.removeItineraryUrl(itineraryId, userId)),
+        headers: {'Content-Type': 'application/json'},
       );
 
       return response.statusCode == 200 || response.statusCode == 204;
@@ -100,4 +94,4 @@ class ItineraryService {
       return false;
     }
   }
-} 
+}

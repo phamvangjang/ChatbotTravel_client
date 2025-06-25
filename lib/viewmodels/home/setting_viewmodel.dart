@@ -42,9 +42,9 @@ class SettingViewModel extends ChangeNotifier {
   }
 
   // Xóa lịch trình
-  Future<bool> deleteItinerary(int itineraryId) async {
+  Future<bool> deleteItinerary(int itineraryId, int userId) async {
     try {
-      final success = await _itineraryService.deleteItinerary(itineraryId);
+      final success = await _itineraryService.deleteItinerary(itineraryId, userId);
       if (success) {
         _savedItineraries.removeWhere((item) => item.id == itineraryId);
         notifyListeners();
