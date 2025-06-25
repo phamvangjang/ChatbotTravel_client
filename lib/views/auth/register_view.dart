@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mobilev2/viewmodels/auth/login_viewmodel.dart';
 import 'package:mobilev2/viewmodels/auth/register_viewmodel.dart';
 import 'package:provider/provider.dart';
 
-class RegisterView extends StatefulWidget{
+class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
   @override
   State<RegisterView> createState() => _RegisterViewState();
@@ -15,6 +16,14 @@ class _RegisterViewState extends State<RegisterView> {
       create: (_) => RegisterViewModel(),
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => RegisterViewModel().goToLogin(context),
+          ),
+        ),
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -24,166 +33,229 @@ class _RegisterViewState extends State<RegisterView> {
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Header
                       const Text(
-                        'Chatbot Travel Agents',
+                        'Tạo tài khoản mới',
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1A1A),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Đăng kí để tiếp tục',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Username field
-                      TextField(
-                        controller: viewModel.usernameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Tên người dùng',
-                          suffix: Text(
-                            'Sửa',
-                            style: TextStyle(color: Colors.blue),
-                          ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Bắt đầu hành trình của bạn với chúng tôi',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade600,
                         ),
-                        keyboardType: TextInputType.name,
-                        textInputAction: TextInputAction.next,
+                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 40),
 
-                      // Email field
-                      TextField(
-                        controller: viewModel.emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Địa chỉ email',
-                          suffix: Text(
-                            'Sửa',
-                            style: TextStyle(color: Colors.blue),
-                          ),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Password field
-                      TextField(
-                        controller: viewModel.passwordController,
-                        obscureText: viewModel.obscurePassword,
-                        decoration: InputDecoration(
-                          labelText: 'Mật khẩu',
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              viewModel.obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
+                      // Form container
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 5),
                             ),
-                            onPressed: viewModel.togglePasswordVisibility,
-                          ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // Username field
+                            TextField(
+                              controller: viewModel.usernameController,
+                              decoration: InputDecoration(
+                                labelText: 'Tên người dùng',
+                                hintText: 'Nhập tên của bạn',
+                                prefixIcon: Icon(Icons.person_outline, color: Colors.grey.shade600),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              ),
+                              keyboardType: TextInputType.name,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Email field
+                            TextField(
+                              controller: viewModel.emailController,
+                              decoration: InputDecoration(
+                                labelText: 'Địa chỉ email',
+                                hintText: 'example@email.com',
+                                prefixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade600),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Password field
+                            TextField(
+                              controller: viewModel.passwordController,
+                              obscureText: viewModel.obscurePassword,
+                              decoration: InputDecoration(
+                                labelText: 'Mật khẩu',
+                                hintText: 'Tối thiểu 6 ký tự',
+                                prefixIcon: Icon(Icons.lock_outlined, color: Colors.grey.shade600),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    viewModel.obscurePassword
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  onPressed: viewModel.togglePasswordVisibility,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Error message
+                            if (viewModel.errorMessage != null)
+                              Container(
+                                width: double.infinity,
+                                margin: const EdgeInsets.only(bottom: 24),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.red.shade200),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.error_outline, color: Colors.red.shade600, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        viewModel.errorMessage!,
+                                        style: TextStyle(color: Colors.red.shade700, fontSize: 14),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                            // Register button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton(
+                                onPressed: viewModel.canRegister && !viewModel.isLoading
+                                    ? () async {
+                                        final success = await viewModel.register();
+                                        if (success && context.mounted) {
+                                          Navigator.pushReplacementNamed(
+                                            context,
+                                            '/verify_otp',
+                                            arguments: {
+                                              'email': viewModel.emailController.text.trim(),
+                                              'otp_type': 'register',
+                                            },
+                                          );
+                                        }
+                                      }
+                                    : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue.shade600,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  disabledBackgroundColor: Colors.grey.shade300,
+                                  disabledForegroundColor: Colors.grey.shade600,
+                                ),
+                                child: viewModel.isLoading
+                                    ? const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Đăng ký',
+                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-
-                      // Thêm hiển thị lỗi
-                      if (viewModel.errorMessage != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(
-                            viewModel.errorMessage!,
-                            style: const TextStyle(
-                              color: Colors.red,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-
-                      // Continue button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed:
-                          viewModel.canRegister && !viewModel.isLoading
-                              ? () async {
-                            final success = await viewModel.register();
-                            if (success && context.mounted) {
-                              Navigator.pushReplacementNamed(
-                                context,
-                                '/verify_otp',
-                                arguments: {
-                                  'email': viewModel.emailController.text.trim(),
-                                  'otp_type': 'register',
-                                },
-                              );
-                            }
-                          }
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                            viewModel.canRegister
-                                ? Colors.blue
-                                : Colors.blue.withOpacity(0.5),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            side: BorderSide.none,
-                          ),
-                          child:
-                          viewModel.isLoading
-                              ? const CircularProgressIndicator(
-                            color: Colors.white,
-                          )
-                              : const Text('Đăng ký'),
-                        ),
-                      ),
-
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text("Bạn đã có tài khoản? "),
+                          Text(
+                            "Bạn đã có tài khoản? ",
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                          ),
                           TextButton(
                             onPressed: () => viewModel.goToLogin(context),
-                            child: const Text('Đăng nhập'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.blue.shade600,
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            ),
+                            child: const Text(
+                              'Đăng nhập ngay',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ],
                       ),
-
-                      const Divider(height: 32),
-                      const Text("hoặc"),
-
-                      const SizedBox(height: 16),
-
-                      /// Google button
-                      _buildOAuthButton(
-                        "Tiếp tục với Google",
-                        Icons.g_mobiledata,
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Microsoft button
-                      _buildOAuthButton(
-                        "Tiếp tục với Microsoft Account",
-                        Icons.window,
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Apple button
-                      _buildOAuthButton("Tiếp tục với Apple", Icons.apple),
-
                       const SizedBox(height: 32),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text('Điều khoản sử dụng'),
-                          SizedBox(width: 16),
-                          Text('Chính sách bảo mật'),
-                        ],
-                      ),
                     ],
                   );
                 },
@@ -191,22 +263,6 @@ class _RegisterViewState extends State<RegisterView> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildOAuthButton(String text, IconData icon) {
-    return OutlinedButton.icon(
-      onPressed: () {},
-      icon: Icon(icon),
-      label: Text(text),
-      style: OutlinedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        minimumSize: const Size(double.infinity, 48),
-        alignment: Alignment.centerLeft,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-        side: BorderSide.none,
       ),
     );
   }
