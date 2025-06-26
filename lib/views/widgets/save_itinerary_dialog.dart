@@ -9,7 +9,7 @@ import 'package:printing/printing.dart';
 
 import '../../helpers/hcm_map_helper.dart';
 import '../../models/itinerary_item.dart';
-import '../../services/itinerary_service.dart';
+import '../../services/home/itinerary_service.dart';
 
 class SaveItineraryDialog extends StatelessWidget {
   final List<ItineraryItem> itinerary;

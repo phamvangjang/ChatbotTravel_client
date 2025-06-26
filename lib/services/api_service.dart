@@ -2,7 +2,7 @@ class ApiService {
   // static const String _baseUrl = "http://10.0.2.2:5000/api";
   static const String _baseUrl = "http://localhost:5000/api";
 
-  //auth all done
+  //auth api
   static String get loginUrl => "$_baseUrl/auth/login";
   static String get registerUrl => "$_baseUrl/auth/register";
   static String get verifyOtpUrl => "$_baseUrl/auth/verify-otp";
@@ -10,7 +10,7 @@ class ApiService {
   static String get verifyForgotPasswordOtpUrl => "$_baseUrl/auth/verify-reset-otp";
   static String get resetPasswordUrl => "$_baseUrl/auth/reset-password";
 
-  //done endpoint
+  //chatting api
   static String get createNewConversationUrl =>
       "$_baseUrl/chatting/conversations";
   static String getUserConversationsUrl(int userId) =>
@@ -23,9 +23,11 @@ class ApiService {
       "$_baseUrl/chatting/conversations/end?conversation_id=$conversationId";
   static String sendVoiceMessagesUrl(int conversationId, String sender) => "$_baseUrl/chatting/messages/voice?conversation_id=$conversationId&sender=$sender";
 
+  //map api
   static String get detectAttractionsUrl => "$_baseUrl/map/attractions/from-places";
   static String get searchAttractionsUrl => "$_baseUrl/map/attractions/search";
 
+  //itinerary api
   static String get createItineraryUrl => "$_baseUrl/itinerary/create";
   static String getItineraryByUserIdUrl(int userId) => "$_baseUrl/itinerary/list?user_id=$userId";
   static String removeItineraryUrl(int itineraryId, int userId) => "$_baseUrl/itinerary/delete?itinerary_id=$itineraryId&user_id=$userId";

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/itinerary_item.dart';
-import '../models/itinerary.dart';
-import 'api_service.dart';
+import '../../models/itinerary_item.dart';
+import '../../models/itinerary.dart';
+import '../api_service.dart';
 
 class ItineraryService {
 

@@ -49,53 +49,48 @@ class AttractionService{
     }
   }
 
-  /// Tìm kiếm địa điểm theo từ khóa thông qua API
+  /// Tìm kiếm địa điểm theo tên thông qua API
   Future<List<Attraction>> searchAttractions(
       String query, {
         LatLng? currentLocation,
-        String language = 'vietnamese',
-        int limit = 20,
+        String language = 'vietnamese'
       }) async {
     try {
       print("🔍 Searching attractions for query: $query");
       print("🌐 Language: $language");
-      print("📊 Limit: $limit");
 
-      // Chuẩn bị query parameters
-      final queryParams = {
-        'q': query,
-        'language': language,
-        'limit': limit.toString(),
+      // Chuẩn bị request body
+      final requestBody = {
+        'places': [query],
+        'language': language
       };
 
-      // Tạo URL với query parameters
-      final uri = Uri.parse(ApiService.searchAttractionsUrl).replace(queryParameters: queryParams);
-      
-      print("📤 API Request URL: $uri");
+      print("📤 API Request URL: "+ApiService.detectAttractionsUrl);
+      print("📤 API Request Body: ${jsonEncode(requestBody)}");
 
-      // Gọi API thực tế
-      final response = await http.get(
-        uri,
+      // Gọi API thực tế (POST)
+      final response = await http.post(
+        Uri.parse(ApiService.detectAttractionsUrl),
         headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
       );
 
-      print("📥 API Response Status: ${response.statusCode}");
-      print("📥 API Response Body: ${response.body}");
+      print("📥 API Response Status: \\${response.statusCode}");
+      print("📥 API Response Body: \\${response.body}");
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        
         // Kiểm tra status
         if (responseData['status'] == 'success') {
           final List<dynamic> attractionsData = responseData['data'] ?? [];
           return _parseAttractionsFromApiResponse(attractionsData);
         } else {
-          print('❌ API returned error: ${responseData['message']}');
+          print('❌ API returned error: \\${responseData['message']}');
           return [];
         }
       } else {
-        print('❌ API request failed: ${response.statusCode}');
-        throw Exception('API request failed: ${response.statusCode}');
+        print('❌ API request failed: \\${response.statusCode}');
+        throw Exception('API request failed: \\${response.statusCode}');
       }
     } catch (e) {
       print('❌ Lỗi khi tìm kiếm địa điểm: $e');

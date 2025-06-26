@@ -14,7 +14,6 @@ import '../../services/home/attraction_service.dart';
 
 class MapViewModel extends ChangeNotifier {
   // Services
-  //final LocationService _locationService = LocationService();
   final AttractionService _attractionService = AttractionService();
 
   // Mapbox access token

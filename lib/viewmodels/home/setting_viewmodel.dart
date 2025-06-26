@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/itinerary.dart';
 import '../../providers/user_provider.dart';
 import '../../services/auth/auth_service.dart';
-import '../../services/itinerary_service.dart';
+import '../../services/home/itinerary_service.dart';
 import 'main_viewmodel.dart';
 
 class SettingViewModel extends ChangeNotifier {

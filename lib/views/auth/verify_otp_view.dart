@@ -197,26 +197,6 @@ class _VerifyOtpViewState extends State<VerifyOtpView>{
                       }),
                     ),
 
-                    /*
-                    const SizedBox(height: 10),
-                    // Debug info
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        children: [
-                          Text('Email: ${vm.email}'),
-                          Text('OTP: "${vm.otpCode}" (${vm.otpCode.length}/6)'),
-                          Text('Can Verify: ${vm.canVerify}'),
-                          Text('Is Loading: ${vm.isLoading}'),
-                        ],
-                      ),
-                    ),
-                     */
-
                     const SizedBox(height: 10),
 
                     // Error Message
