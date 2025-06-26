@@ -3,7 +3,7 @@ import 'attraction_model.dart';
 
 class ItineraryItem {
   final int? id;
-  final int? userId;
+  final int? itineraryId;
   final Attraction attraction;
   final DateTime visitTime;
   final Duration estimatedDuration;
@@ -12,7 +12,7 @@ class ItineraryItem {
 
   ItineraryItem({
     this.id,
-    this.userId,
+    this.itineraryId,
     required this.attraction,
     required this.visitTime,
     this.estimatedDuration = const Duration(hours: 2),
@@ -22,7 +22,7 @@ class ItineraryItem {
 
   ItineraryItem copyWith({
     int? id,
-    int? userId,
+    int? itineraryId,
     Attraction? attraction,
     DateTime? visitTime,
     Duration? estimatedDuration,
@@ -31,7 +31,7 @@ class ItineraryItem {
   }) {
     return ItineraryItem(
       id: id ?? this.id,
-      userId: userId ?? this.userId,
+      itineraryId: itineraryId ?? this.itineraryId,
       attraction: attraction ?? this.attraction,
       visitTime: visitTime ?? this.visitTime,
       estimatedDuration: estimatedDuration ?? this.estimatedDuration,
@@ -43,7 +43,7 @@ class ItineraryItem {
   factory ItineraryItem.fromJson(Map<String, dynamic> json) {
     return ItineraryItem(
       id: json['id'],
-      userId: json['user_id'],
+      itineraryId: json['itinerary_id'],
       attraction: json['attraction'] != null 
           ? Attraction.fromJson(json['attraction']) 
           : Attraction(
@@ -71,7 +71,7 @@ class ItineraryItem {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'user_id': userId,
+      'itinerary_id': itineraryId,
       'attraction': attraction.toJson(),
       'visit_time': visitTime.toIso8601String(),
       'estimated_duration': estimatedDuration.inMinutes,
@@ -85,18 +85,18 @@ class ItineraryItem {
     if (identical(this, other)) return true;
     return other is ItineraryItem && 
            other.id == id && 
-           other.userId == userId &&
+           other.itineraryId == itineraryId &&
            other.attraction == attraction &&
            other.visitTime == visitTime;
   }
 
   @override
   int get hashCode {
-    return Object.hash(id, userId, attraction, visitTime);
+    return Object.hash(id, itineraryId, attraction, visitTime);
   }
 
   @override
   String toString() {
-    return 'ItineraryItem(id: $id, userId: $userId, attraction: ${attraction.name}, visitTime: $visitTime, duration: ${estimatedDuration.inMinutes}min, notes: $notes)';
+    return 'ItineraryItem(id: $id, itineraryId: $itineraryId, attraction: ${attraction.name}, visitTime: $visitTime, duration: ${estimatedDuration.inMinutes}min, notes: $notes)';
   }
 }

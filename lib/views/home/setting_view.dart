@@ -379,9 +379,10 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
           );
         }
 
-        final itinerariesByDate = settingViewModel.itinerariesByDate;
+        final itineraryGroups = List<ItineraryGroup>.from(settingViewModel.itineraryGroups)
+          ..sort((a, b) => b.date.compareTo(a.date));
 
-        if (itinerariesByDate.isEmpty) {
+        if (itineraryGroups.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -414,16 +415,16 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
           );
         }
 
-        //hiển thị lịch trình
         return RefreshIndicator(
           onRefresh: () => settingViewModel.loadSavedItineraries(user.id!),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: itinerariesByDate.length,
+            itemCount: itineraryGroups.length,
             itemBuilder: (context, index) {
-              final date = itinerariesByDate.keys.elementAt(index);
-              final itineraries = itinerariesByDate[date]!;
-              
+              final group = itineraryGroups[index];
+              final date = group.date;
+              final title = group.title;
+              final itineraries = group.itineraries;
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
@@ -440,7 +441,7 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header với ngày và thống kê
+                    // Header với ngày, title và thống kê
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -458,63 +459,33 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                             size: 20,
                           ),
                           const SizedBox(width: 8),
+                          Text(
+                            settingViewModel.formatDate(date),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade700,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(Icons.label, color: Colors.blue.shade900, size: 18),
+                          const SizedBox(width: 4),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      settingViewModel.formatDate(date),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue.shade700,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: itineraries.map((it) => Text(
-                                          it.title,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.blue.shade900,
-                                            fontSize: 14,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        )).toList(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(Icons.access_time, size: 14, color: Colors.blue.shade600),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      settingViewModel.formatDuration(settingViewModel.getTotalDuration(itineraries)),
-                                      style: TextStyle(fontSize: 12, color: Colors.blue.shade600),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Icon(Icons.attach_money, size: 14, color: Colors.blue.shade600),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${settingViewModel.formatPrice(settingViewModel.getTotalCost(itineraries))} VND',
-                                      style: TextStyle(fontSize: 12, color: Colors.blue.shade600),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: Colors.blue.shade900,
+                                fontSize: 14,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           PopupMenuButton<String>(
                             onSelected: (value) async {
                               if (value == 'delete') {
-                                // Xóa tất cả itineraries trong ngày này
+                                // Xóa tất cả itineraries trong group này
                                 for (final item in itineraries) {
                                   if (item.id != null) {
                                     final shouldDelete = await settingViewModel.showDeleteItineraryConfirmation(context, item.id);
@@ -542,7 +513,27 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                         ],
                       ),
                     ),
-
+                    // Thống kê
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.access_time, size: 14, color: Colors.blue.shade600),
+                          const SizedBox(width: 4),
+                          Text(
+                            settingViewModel.formatDuration(settingViewModel.getTotalDuration(itineraries)),
+                            style: TextStyle(fontSize: 12, color: Colors.blue.shade600),
+                          ),
+                          const SizedBox(width: 16),
+                          Icon(Icons.attach_money, size: 14, color: Colors.blue.shade600),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${settingViewModel.formatPrice(settingViewModel.getTotalCost(itineraries))} VND',
+                            style: TextStyle(fontSize: 12, color: Colors.blue.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
                     // Danh sách địa điểm
                     ListView.builder(
                       shrinkWrap: true,

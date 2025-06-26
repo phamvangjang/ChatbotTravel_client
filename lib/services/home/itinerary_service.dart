@@ -6,6 +6,40 @@ import '../api_service.dart';
 
 class ItineraryService {
 
+  // Lấy danh sách lịch trình của user
+  Future<List<Itinerary>> getUserItineraries(int userId) async {
+    try {
+      print('ℹ️ Đang tải lịch trình cho User ID: $userId...');
+      final response = await http.get(
+        Uri.parse(ApiService.getItineraryByUserIdUrl(userId)),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      print('📥 Response từ server: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        
+        if (responseData['status'] == 'success' && responseData['data'] != null) {
+          final List<dynamic> itinerariesData = responseData['data'];
+          final itineraries = itinerariesData
+              .map((data) => Itinerary.fromJson(data))
+              .toList();
+          print('✅ Tải và parse thành công ${itineraries.length} lịch trình.');
+          return itineraries;
+        } else {
+          print('❌ Lỗi từ API: ${responseData['message']}');
+          throw Exception('Lỗi từ API: ${responseData['message']}');
+        }
+      } else {
+        throw Exception('Lỗi server: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Exception khi tải lịch trình: $e');
+      throw Exception('Exception khi tải lịch trình: $e');
+    }
+  }
+
   // Lưu lịch trình vào database
   Future<bool> saveItinerary({
     required List<ItineraryItem> itinerary,
@@ -47,38 +81,10 @@ class ItineraryService {
       print('📥 Response từ server: ${response.statusCode}');
       print('📥 Response body: ${response.body}');
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        print('✅ Lưu lịch trình thành công!');
-        return true;
-      } else {
-        print('❌ Lỗi khi lưu lịch trình: ${response.statusCode}');
-        return false;
-      }
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       print('❌ Exception khi lưu lịch trình: $e');
       return false;
-    }
-  }
-
-  // Lấy lịch trình của user
-  Future<List<Itinerary>> getUserItineraries(int userId) async {
-    try {
-      final response = await http.get(
-        Uri.parse(ApiService.getItineraryByUserIdUrl(userId)),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonResponse = json.decode(response.body);
-        final List<dynamic> data = jsonResponse['data'] ?? [];
-        return data.map((e) => Itinerary.fromJson(e)).toList();
-      } else {
-        print('❌ Lỗi khi lấy lịch trình: [31m${response.statusCode}[0m');
-        return [];
-      }
-    } catch (e) {
-      print('❌ Exception khi lấy lịch trình: $e');
-      return [];
     }
   }
 
@@ -89,8 +95,7 @@ class ItineraryService {
         Uri.parse(ApiService.removeItineraryUrl(itineraryId, userId)),
         headers: {'Content-Type': 'application/json'},
       );
-
-      return response.statusCode == 200 || response.statusCode == 204;
+      return response.statusCode == 200;
     } catch (e) {
       print('❌ Exception khi xóa lịch trình: $e');
       return false;

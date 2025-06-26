@@ -7,6 +7,13 @@ import '../../services/auth/auth_service.dart';
 import '../../services/home/itinerary_service.dart';
 import 'main_viewmodel.dart';
 
+class ItineraryGroup {
+  final DateTime date;
+  final String title;
+  final List<Itinerary> itineraries;
+  ItineraryGroup({required this.date, required this.title, required this.itineraries});
+}
+
 class SettingViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final ItineraryService _itineraryService = ItineraryService();
@@ -68,31 +75,26 @@ class SettingViewModel extends ChangeNotifier {
     }
   }
 
-  // Nhóm lịch trình theo ngày
-  Map<DateTime, List<Itinerary>> get itinerariesByDate {
-    final Map<DateTime, List<Itinerary>> grouped = {};
-
+  // Nhóm lịch trình theo ngày và title
+  List<ItineraryGroup> get itineraryGroups {
+    final Map<String, List<Itinerary>> grouped = {};
     for (final itinerary in _savedItineraries) {
-      // Parse selectedDate sang DateTime
-      final dateKey =
-          DateTime.tryParse(itinerary.selectedDate) ?? DateTime(2000);
-      if (grouped.containsKey(dateKey)) {
-        grouped[dateKey]!.add(itinerary);
+      final groupKey = itinerary.id.toString();
+      if (grouped.containsKey(groupKey)) {
+        grouped[groupKey]!.add(itinerary);
       } else {
-        grouped[dateKey] = [itinerary];
+        grouped[groupKey] = [itinerary];
       }
     }
-
-    // Sắp xếp các ngày theo thứ tự mới nhất trước
-    final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-
-    final Map<DateTime, List<Itinerary>> sortedGrouped = {};
-    for (final key in sortedKeys) {
-      // Không cần sort theo visitTime nữa
-      sortedGrouped[key] = grouped[key]!;
-    }
-
-    return sortedGrouped;
+    final List<ItineraryGroup> groups = grouped.entries.map((entry) {
+      final first = entry.value.first;
+      final date = DateTime.tryParse(first.selectedDate) ?? DateTime(2000);
+      final title = first.title;
+      return ItineraryGroup(date: date, title: title, itineraries: entry.value);
+    }).toList();
+    // Sắp xếp theo ngày giảm dần (gần nhất lên đầu)
+    groups.sort((a, b) => b.date.compareTo(a.date));
+    return groups;
   }
 
   // Tính tổng thời gian của lịch trình
