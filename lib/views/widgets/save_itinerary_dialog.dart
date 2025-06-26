@@ -3,39 +3,66 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:mobilev2/services/home/itinerary_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../helpers/hcm_map_helper.dart';
 import '../../models/itinerary_item.dart';
-import '../../services/home/itinerary_service.dart';
 
-class SaveItineraryDialog extends StatelessWidget {
+class SaveItineraryDialog extends StatefulWidget {
   final List<ItineraryItem> itinerary;
   final DateTime selectedDate;
-  final Future<bool> Function() onSave;
   final int? userId;
 
   const SaveItineraryDialog({
     super.key,
     required this.itinerary,
     required this.selectedDate,
-    required this.onSave,
     this.userId,
   });
 
+  static Future<void> show(
+    BuildContext context, {
+    required List<ItineraryItem> itinerary,
+    required DateTime selectedDate,
+    int? userId,
+  }) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => SaveItineraryDialog(
+        itinerary: itinerary,
+        selectedDate: selectedDate,
+        userId: userId,
+      ),
+    );
+  }
+
+  @override
+  State<SaveItineraryDialog> createState() => _SaveItineraryDialogState();
+}
+
+class _SaveItineraryDialogState extends State<SaveItineraryDialog> {
+  final TextEditingController _nameController = TextEditingController();
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // In ra thông tin lịch trình vào terminal
     _printItineraryInfo();
-    
     return AlertDialog(
       title: const Row(
         children: [
           Icon(Icons.save, color: Colors.green),
           SizedBox(width: 8),
-          Expanded(child: Text(
+          Expanded(
+              child: Text(
             'Xác nhận lưu lịch trình',
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 22, color: Colors.green),
@@ -47,63 +74,37 @@ class SaveItineraryDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Bạn có muốn lưu lịch trình cho ngày ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}?',
+            'Bạn có muốn lưu lịch trình cho ngày ${widget.selectedDate.day}/${widget.selectedDate.month}/${widget.selectedDate.year}?',
             style: const TextStyle(fontSize: 16),
           ),
           const SizedBox(height: 16),
-          
-          // Thông tin user nếu đã đăng nhập
-          if (userId != null) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.shade200),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.person, color: Colors.green.shade600, size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Đăng nhập với User ID: $userId',
-                    style: TextStyle(
-                      color: Colors.green.shade600,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+          // Text input cho tên chuyến du lịch
+          TextField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              labelText: 'Tên chuyến du lịch',
+              hintText: 'Nhập tên chuyến du lịch...',
+              border: OutlineInputBorder(),
+              errorText: _errorText,
+              prefixIcon: Icon(Icons.edit_location_alt, color: Colors.blue),
+            ),
+            maxLength: 50,
+            onChanged: (_) {
+              setState(() {
+                _errorText = null;
+              });
+            },
+          ),
+          if (widget.userId == null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 8),
+              child: Text(
+                'Bạn cần đăng nhập để lưu lịch trình vào tài khoản.',
+                style: TextStyle(color: Colors.red.shade700, fontSize: 12),
               ),
             ),
-            const SizedBox(height: 16),
-          ] else ...[
-            // Cảnh báo nếu chưa đăng nhập
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.warning, color: Colors.orange.shade600, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Chưa đăng nhập - Lịch trình sẽ được lưu cục bộ',
-                      style: TextStyle(
-                        color: Colors.orange.shade600,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          
+          const SizedBox(height: 16),
+          // Thông tin lịch trình
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -133,7 +134,7 @@ class SaveItineraryDialog extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('• Số địa điểm: ${itinerary.length}'),
+                Text('• Số địa điểm: ${widget.itinerary.length}'),
                 Text('• Thời gian bắt đầu: ${_getStartTime()}'),
                 Text('• Thời gian kết thúc: ${_getEndTime()}'),
                 const SizedBox(height: 8),
@@ -164,14 +165,24 @@ class SaveItineraryDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(context).pop(),
           child: const Text('Hủy'),
         ),
         ElevatedButton(
-          onPressed: () async {
-            Navigator.of(context).pop(true);
-            await _handleSaveAndPDF(context);
-          },
+          onPressed: widget.userId == null
+              ? null
+              : () async {
+                  if (_nameController.text.trim().isEmpty) {
+                    setState(() {
+                      _errorText = 'Vui lòng nhập tên chuyến du lịch';
+                    });
+                    return;
+                  }
+                  // Close the confirmation dialog
+                  Navigator.of(context).pop();
+                  // Handle saving and PDF generation
+                  await _handleSaveAndPDF(context, _nameController.text.trim());
+                },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.green.shade600,
             foregroundColor: Colors.white,
@@ -182,161 +193,75 @@ class SaveItineraryDialog extends StatelessWidget {
     );
   }
 
-  Future<void> _handleSaveAndPDF(BuildContext context) async {
-    // In ra thông tin khi bắt đầu lưu
+  Future<void> _handleSaveAndPDF(BuildContext context, String itineraryName) async {
     print('💾 BẮT ĐẦU LƯU LỊCH TRÌNH...');
-    if (userId != null) {
-      print('👤 User ID: $userId');
-    } else {
-      print('⚠️ Chưa đăng nhập - Lưu cục bộ');
-    }
-    print('📅 Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}');
-    print('📍 Số địa điểm: ${itinerary.length}');
+    print('📅 Ngày: ${widget.selectedDate.day}/${widget.selectedDate.month}/${widget.selectedDate.year}');
+    print('📍 Số địa điểm: ${widget.itinerary.length}');
     print('⏰ Thời gian: ${_getStartTime()} - ${_getEndTime()}');
     print('💰 Tổng chi phí: ${_formatPrice(_getTotalPrice())} VND');
+    print('Tên chuyến du lịch: $itineraryName');
+    print('👤 User ID: ${widget.userId}');
     print('-' * 40);
-    
-    // Show loading dialog
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                Text(
-                  userId != null 
-                    ? 'Đang lưu vào database...'
-                    : 'Đang lưu cục bộ...',
-                ),
-              ],
-            ),
+      builder: (BuildContext context) {
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Đang lưu vào database...'),
+            ],
           ),
+        );
+      },
     );
 
     try {
-      // Gọi hàm lưu database nếu có user ID, hoặc gọi onSave() nếu không có
-      bool success;
-      
-      if (userId != null) {
-        // Có user ID - lưu vào database
+      bool success = false;
+      if (widget.userId != null) {
         final itineraryService = ItineraryService();
         success = await itineraryService.saveItinerary(
-          itinerary: itinerary,
-          selectedDate: selectedDate,
-          userId: userId!,
+          itinerary: widget.itinerary,
+          selectedDate: widget.selectedDate,
+          userId: widget.userId!,
+          title: itineraryName,
         );
-      } else {
-        // Không có user ID - gọi onSave() (có thể lưu cục bộ)
-        success = await onSave();
       }
-      
-      if(context.mounted){
-        Navigator.of(context).pop();
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
       }
 
       if (success) {
         if (context.mounted) {
-          Navigator.of(context).pop();
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder:
-                (context) => const AlertDialog(
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
-                      Text('Đang tạo PDF với bản đồ Hồ Chí Minh...'),
-                    ],
-                  ),
-                ),
-          );
-        }
-
-        await _generateEnhancedPDF();
-
-        if (context.mounted) {
-          Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      userId != null 
-                        ? '✅ Lịch trình đã lưu vào database và PDF đã tải về'
-                        : '✅ Lịch trình đã lưu cục bộ và PDF đã tải về',
-                    ),
-                  ),
-                ],
-              ),
+            const SnackBar(
+              content: Text('✅ Lịch trình đã lưu thành công!'),
               backgroundColor: Colors.green,
-              duration: const Duration(seconds: 3),
             ),
           );
-          
-          // In ra thông báo thành công
-          print('✅ LỊCH TRÌNH ĐÃ LƯU THÀNH CÔNG!');
-          if (userId != null) {
-            print('💾 Đã lưu vào database với User ID: $userId');
-          } else {
-            print('💾 Đã lưu cục bộ (chưa đăng nhập)');
-          }
-          print('📄 PDF đã được tạo và tải về');
-          print('📅 Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}');
-          print('📍 Số địa điểm: ${itinerary.length}');
-          print('⏰ Thời gian: ${_getStartTime()} - ${_getEndTime()}');
-          print('💰 Tổng chi phí: ${_formatPrice(_getTotalPrice())} VND');
-          print('=' * 50);
-        } else {
-          if (context.mounted) {
-            Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    Icon(Icons.error, color: Colors.white),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        userId != null 
-                          ? '❌ Lỗi khi lưu vào database'
-                          : '❌ Lỗi khi lưu cục bộ',
-                      ),
-                    ),
-                  ],
-                ),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
+          // Generate and show PDF after successful save
+          await _generateAndShowPdf(context);
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Lỗi khi lưu vào database'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     } catch (e) {
       if (context.mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(); // Close loading dialog on error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    userId != null 
-                      ? '❌ Lỗi kết nối database: ${e.toString()}'
-                      : '❌ Lỗi lưu cục bộ: ${e.toString()}',
-                  ),
-                ),
-              ],
-            ),
+            content: Text('❌ Lỗi kết nối: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -344,7 +269,7 @@ class SaveItineraryDialog extends StatelessWidget {
     }
   }
 
-  Future<void> _generateEnhancedPDF() async {
+  Future<void> _generateAndShowPdf(BuildContext context) async {
     try {
       // Load fonts
       final fontRegular = await PdfGoogleFonts.robotoRegular();
@@ -391,7 +316,7 @@ class SaveItineraryDialog extends StatelessWidget {
                         children: [
                           // Tiêu đề lịch trình
                           pw.Text(
-                            'Hồ Chí Minh - ngày ${selectedDate.day}',
+                            'Hồ Chí Minh - ngày ${widget.selectedDate.day}',
                             style: pw.TextStyle(
                               font: fontBold,
                               fontSize: 24,
@@ -401,10 +326,10 @@ class SaveItineraryDialog extends StatelessWidget {
                           pw.SizedBox(height: 20),
 
                           // Timeline lịch trình
-                          ...itinerary.asMap().entries.map((entry) {
+                          ...widget.itinerary.asMap().entries.map((entry) {
                             final index = entry.key;
                             final item = entry.value;
-                            final isLast = index == itinerary.length - 1;
+                            final isLast = index == widget.itinerary.length - 1;
 
                             return pw.Column(
                               children: [
@@ -512,7 +437,7 @@ class SaveItineraryDialog extends StatelessWidget {
                               ),
                               pw.SizedBox(height: 8),
                               pw.Text(
-                                '${selectedDate.day} THÁNG ${selectedDate.month} ${selectedDate.year}',
+                                '${widget.selectedDate.day} THÁNG ${widget.selectedDate.month} ${widget.selectedDate.year}',
                                 style: pw.TextStyle(
                                   font: fontRegular,
                                   fontSize: 14,
@@ -522,7 +447,7 @@ class SaveItineraryDialog extends StatelessWidget {
                               ),
                               pw.SizedBox(height: 4),
                               pw.Text(
-                                '${itinerary.length} ĐỊA ĐIỂM',
+                                '${widget.itinerary.length} ĐỊA ĐIỂM',
                                 style: pw.TextStyle(
                                   font: fontBold,
                                   fontSize: 12,
@@ -703,7 +628,7 @@ class SaveItineraryDialog extends StatelessWidget {
               pw.SizedBox(height: 10),
 
               // Danh sách địa điểm chi tiết
-              ...itinerary.asMap().entries.map((entry) {
+              ...widget.itinerary.asMap().entries.map((entry) {
                 final index = entry.key;
                 final item = entry.value;
 
@@ -928,7 +853,7 @@ class SaveItineraryDialog extends StatelessWidget {
 
       // Tải PDF về
       final fileName =
-          'Lich_trinh_${selectedDate.day}_${selectedDate.month}_${selectedDate.year}.pdf';
+          'Lich_trinh_${widget.selectedDate.day}_${widget.selectedDate.month}_${widget.selectedDate.year}.pdf';
 
       await Printing.sharePdf(bytes: await pdf.save(), filename: fileName);
     } catch (e) {
@@ -970,22 +895,22 @@ class SaveItineraryDialog extends StatelessWidget {
   }
 
   String _getStartTime() {
-    if (itinerary.isEmpty) return '--:--';
-    final startTime = itinerary.first.visitTime;
+    if (widget.itinerary.isEmpty) return '--:--';
+    final startTime = widget.itinerary.first.visitTime;
     return '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
   }
 
   String _getEndTime() {
-    if (itinerary.isEmpty) return '--:--';
-    final lastItem = itinerary.last;
+    if (widget.itinerary.isEmpty) return '--:--';
+    final lastItem = widget.itinerary.last;
     final endTime = lastItem.visitTime.add(lastItem.estimatedDuration);
     return '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
   }
 
   String _getTotalDuration() {
-    if (itinerary.isEmpty) return '0h 0m';
+    if (widget.itinerary.isEmpty) return '0h 0m';
 
-    final totalMinutes = itinerary.fold<int>(
+    final totalMinutes = widget.itinerary.fold<int>(
       0,
       (sum, item) => sum + item.estimatedDuration.inMinutes,
     );
@@ -997,29 +922,9 @@ class SaveItineraryDialog extends StatelessWidget {
   }
 
   double _getTotalPrice() {
-    return itinerary.fold<double>(
+    return widget.itinerary.fold<double>(
       0.0,
       (sum, item) => sum + (item.attraction.price ?? 0.0),
-    );
-  }
-
-  static Future<bool?> show(
-    BuildContext context, {
-    required List<ItineraryItem> itinerary,
-    required DateTime selectedDate,
-    required Future<bool> Function() onSave,
-    int? userId,
-  }) {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => SaveItineraryDialog(
-            itinerary: itinerary,
-            selectedDate: selectedDate,
-            onSave: onSave,
-            userId: userId,
-          ),
     );
   }
 
@@ -1030,10 +935,10 @@ class SaveItineraryDialog extends StatelessWidget {
       final mapboxAccessToken = dotenv.env["MAPBOX_ACCESS_TOKEN"];
 
       // Tạo danh sách các điểm trên bản đồ từ lịch trình
-      final List<LatLng> points = itinerary.map((item) => item.attraction.location).toList();
+      final List<LatLng> points = widget.itinerary.map((item) => item.attraction.location).toList();
 
       // Tạo danh sách tên các địa điểm
-      final List<String> locationNames = itinerary.map((item) => item.attraction.name).toList();
+      final List<String> locationNames = widget.itinerary.map((item) => item.attraction.name).toList();
 
       if (mapboxAccessToken == null || mapboxAccessToken.isEmpty) {
         print('Mapbox access token is missing, falling back to OpenStreetMap');
@@ -1077,8 +982,8 @@ class SaveItineraryDialog extends StatelessWidget {
     } catch (e) {
       print('❌ Error generating map image: $e');
       // Fallback to generated image with itinerary points
-      final points = itinerary.map((item) => item.attraction.location).toList();
-      final locationNames = itinerary.map((item) => item.attraction.name).toList();
+      final points = widget.itinerary.map((item) => item.attraction.location).toList();
+      final locationNames = widget.itinerary.map((item) => item.attraction.name).toList();
 
       return await HCMCMapHelper.generateFallbackMapImage(
         itineraryPoints: points,
@@ -1102,29 +1007,23 @@ class SaveItineraryDialog extends StatelessWidget {
     print('=' * 50);
     print('📋 THÔNG TIN LỊCH TRÌNH DU LỊCH');
     print('=' * 50);
-    if (userId != null) {
-      print('👤 User ID: $userId');
-    }
-    print('📅 Ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}');
-    print('📍 Số địa điểm: ${itinerary.length}');
+    print('📅 Ngày: ${widget.selectedDate.day}/${widget.selectedDate.month}/${widget.selectedDate.year}');
+    print('📍 Số địa điểm: ${widget.itinerary.length}');
     print('⏰ Thời gian bắt đầu: ${_getStartTime()}');
     print('⏰ Thời gian kết thúc: ${_getEndTime()}');
     print('⏱️ Tổng thời gian: ${_getTotalDuration()}');
     print('💰 Tổng chi phí: ${_formatPrice(_getTotalPrice())} VND');
     print('');
     
-    if (itinerary.isNotEmpty) {
+    if (widget.itinerary.isNotEmpty) {
       print('🗺️ DANH SÁCH ĐỊA ĐIỂM:');
       print('-' * 50);
       
-      for (int i = 0; i < itinerary.length; i++) {
-        final item = itinerary[i];
+      for (int i = 0; i < widget.itinerary.length; i++) {
+        final item = widget.itinerary[i];
         print('${i + 1}. ${item.attraction.name}');
         if (item.id != null) {
           print('   🆔 ID: ${item.id}');
-        }
-        if (item.userId != null) {
-          print('   👤 User ID: ${item.userId}');
         }
         print('   📍 Địa chỉ: ${item.attraction.address}');
         print('   ⏰ Thời gian: ${item.visitTime.hour.toString().padLeft(2, '0')}:${item.visitTime.minute.toString().padLeft(2, '0')}');
@@ -1146,11 +1045,11 @@ class SaveItineraryDialog extends StatelessWidget {
       
       print('📊 THỐNG KÊ:');
       print('-' * 30);
-      print('• Địa điểm có giá: ${itinerary.where((item) => item.attraction.price != null).length}/${itinerary.length}');
-      print('• Địa điểm có ghi chú: ${itinerary.where((item) => item.notes.isNotEmpty).length}/${itinerary.length}');
+      print('• Địa điểm có giá: ${widget.itinerary.where((item) => item.attraction.price != null).length}/${widget.itinerary.length}');
+      print('• Địa điểm có ghi chú: ${widget.itinerary.where((item) => item.notes.isNotEmpty).length}/${widget.itinerary.length}');
       print('• Rating trung bình: ${_getAverageRating().toStringAsFixed(1)}/5');
-      print('• Địa điểm miễn phí: ${itinerary.where((item) => item.attraction.price == null || item.attraction.price == 0).length}');
-      print('• Địa điểm có phí: ${itinerary.where((item) => item.attraction.price != null && item.attraction.price! > 0).length}');
+      print('• Địa điểm miễn phí: ${widget.itinerary.where((item) => item.attraction.price == null || item.attraction.price == 0).length}');
+      print('• Địa điểm có phí: ${widget.itinerary.where((item) => item.attraction.price != null && item.attraction.price! > 0).length}');
     } else {
       print('❌ Không có địa điểm nào trong lịch trình!');
     }
@@ -1159,11 +1058,11 @@ class SaveItineraryDialog extends StatelessWidget {
   }
   
   double _getAverageRating() {
-    if (itinerary.isEmpty) return 0.0;
-    final totalRating = itinerary.fold<double>(
+    if (widget.itinerary.isEmpty) return 0.0;
+    final totalRating = widget.itinerary.fold<double>(
       0.0,
       (sum, item) => sum + item.attraction.rating,
     );
-    return totalRating / itinerary.length;
+    return totalRating / widget.itinerary.length;
   }
 }

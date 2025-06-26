@@ -65,7 +65,7 @@ class AttractionService{
         'language': language
       };
 
-      print("📤 API Request URL: "+ApiService.detectAttractionsUrl);
+      print("📤 API Request URL: $ApiService.detectAttractionsUrl");
       print("📤 API Request Body: ${jsonEncode(requestBody)}");
 
       // Gọi API thực tế (POST)

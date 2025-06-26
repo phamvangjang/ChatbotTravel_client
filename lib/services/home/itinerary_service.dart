@@ -11,6 +11,7 @@ class ItineraryService {
     required List<ItineraryItem> itinerary,
     required DateTime selectedDate,
     required int userId,
+    required String title,
   }) async {
     try {
       print('💾 Đang gửi dữ liệu lên server...');
@@ -29,6 +30,7 @@ class ItineraryService {
       final requestData = {
         'user_id': userId,
         'selected_date': selectedDate.toIso8601String(),
+        'title': title,
         'itinerary_items': itineraryData,
       };
 

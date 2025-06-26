@@ -54,6 +54,7 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
       );
     }
 
+    //hiển thị tab
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cài đặt'),
@@ -413,6 +414,7 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
           );
         }
 
+        //hiển thị lịch trình
         return RefreshIndicator(
           onRefresh: () => settingViewModel.loadSavedItineraries(user.id!),
           child: ListView.builder(
@@ -460,13 +462,33 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  settingViewModel.formatDate(date),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade700,
-                                    fontSize: 16,
-                                  ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      settingViewModel.formatDate(date),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade700,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: itineraries.map((it) => Text(
+                                          it.title,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.blue.shade900,
+                                            fontSize: 14,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        )).toList(),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 4),
                                 Row(

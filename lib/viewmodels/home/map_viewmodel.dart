@@ -738,6 +738,7 @@ class MapViewModel extends ChangeNotifier {
   }
 
   // Lưu lịch trình
+  /*
   Future<bool> saveItinerary() async {
     try {
       // TODO: Implement saving itinerary to backend
@@ -748,6 +749,7 @@ class MapViewModel extends ChangeNotifier {
       return false;
     }
   }
+  */
 
   // Lấy vị trí hiện tại (public method)
   Future<void> getCurrentLocation() async {

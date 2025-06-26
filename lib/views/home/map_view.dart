@@ -4,13 +4,13 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../models/itinerary_item.dart';
-import '../../providers/user_provider.dart';
 import '../../viewmodels/home/map_viewmodel.dart';
 import '../widgets/save_itinerary_dialog.dart';
 import '../widgets/attraction_info_card.dart';
 import '../widgets/itinerary_item_card.dart';
 import '../widgets/attraction_chip.dart';
 import '../widgets/legend_item.dart';
+import '../../providers/user_provider.dart';
 
 class MapView extends StatelessWidget {
   final List<String> places;
@@ -1274,22 +1274,17 @@ class _TimelineTab extends StatelessWidget {
                       viewModel.todayItinerary.isEmpty
                           ? null
                           : () async {
-                            // Show confirmation dialog
-                            final userProvider = Provider.of<UserProvider>(context, listen: false);
-                            final currentUser = userProvider.user;
-                            
-                            await SaveItineraryDialog.show(
-                              context,
-                              itinerary: viewModel.todayItinerary,
-                              selectedDate: viewModel.selectedDate,
-                              onSave: () async {
-                                // TODO: Implement database saving in SaveItineraryDialog
-                                await Future.delayed(const Duration(seconds: 1));
-                                return true;
-                              },
-                              userId: currentUser?.id, // Lấy user ID từ provider
-                            );
-                          },
+                              // Show confirmation dialog
+                              final userProvider = Provider.of<UserProvider>(context, listen: false);
+                              final currentUser = userProvider.user;
+
+                              await SaveItineraryDialog.show(
+                                context,
+                                itinerary: viewModel.todayItinerary,
+                                selectedDate: viewModel.selectedDate,
+                                userId: currentUser?.id, // Lấy user ID từ provider
+                              );
+                            },
                   icon: const Icon(Icons.save),
                   label: const Text('Lưu lịch trình'),
                   style: ElevatedButton.styleFrom(
