@@ -169,11 +169,15 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        user?.username ?? 'Chưa đăng nhập',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(Icons.person_outline, color: Colors.green),
+                        title: Text(user?.username ?? 'Chưa đăng nhập', style: const TextStyle(fontWeight: FontWeight.w500)),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: user == null ? null : () {
+                            showEditUsernameDialog(context, user.username ?? '');
+                          },
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -590,29 +594,6 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
                                             ),
                                         ],
                                       ),
-                                      trailing: item.id != null ? PopupMenuButton<String>(
-                                        onSelected: (value) async {
-                                          if (value == 'delete' && item.id != null) {
-                                            final shouldDelete = await settingViewModel.showDeleteItineraryConfirmation(context, item.id!);
-                                            if (shouldDelete) {
-                                              await settingViewModel.deleteItinerary(item.id!, user.id!);
-                                            }
-                                          }
-                                        },
-                                        itemBuilder: (context) => [
-                                          const PopupMenuItem(
-                                            value: 'delete',
-                                            child: Row(
-                                              children: [
-                                                Icon(Icons.delete, color: Colors.red),
-                                                SizedBox(width: 8),
-                                                Text('Xóa'),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                        child: Icon(Icons.more_vert, size: 16),
-                                      ) : null,
                                     ),
                                     if (!isLast)
                                       Divider(
@@ -636,6 +617,49 @@ class _SettingView extends State<SettingView> with TickerProviderStateMixin {
           ),
         );
       },
+    );
+  }
+
+  void showEditUsernameDialog(BuildContext context, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Chỉnh sửa tên người dùng'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Tên mới',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isEmpty) return;
+              final settingViewModel = Provider.of<SettingViewModel>(context, listen: false);
+              final success = await settingViewModel.updateUsername(context, newName);
+              if (success) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Đã cập nhật tên thành công!'), backgroundColor: Colors.green),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Cập nhật thất bại!'), backgroundColor: Colors.red),
+                );
+              }
+            },
+            child: const Text('Lưu'),
+          ),
+        ],
+      ),
     );
   }
 }

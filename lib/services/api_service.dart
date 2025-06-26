@@ -9,6 +9,7 @@ class ApiService {
   static String get forgotPasswordUrl => "$_baseUrl/auth/forgot-password";
   static String get verifyForgotPasswordOtpUrl => "$_baseUrl/auth/verify-reset-otp";
   static String get resetPasswordUrl => "$_baseUrl/auth/reset-password";
+  static String get updateUsernameUrl => "$_baseUrl/auth/update-username";
 
   //chatting api
   static String get createNewConversationUrl =>

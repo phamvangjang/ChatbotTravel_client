@@ -11,6 +11,20 @@ class UserModel {
     required this.isVerified,
   });
 
+  UserModel copyWith({
+    int? id,
+    String? username,
+    String? email,
+    bool? isVerified,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      isVerified: isVerified ?? this.isVerified,
+    );
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'],

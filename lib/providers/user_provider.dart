@@ -26,4 +26,11 @@ class UserProvider extends ChangeNotifier{
       print("👤 UserProvider.setUserIfAvailable: user is null");
     }
   }
+
+  void setUsername(String username) {
+    if (_userModel != null) {
+      _userModel = _userModel!.copyWith(username: username);
+      notifyListeners();
+    }
+  }
 }

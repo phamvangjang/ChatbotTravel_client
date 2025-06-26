@@ -243,4 +243,22 @@ class SettingViewModel extends ChangeNotifier {
         ) ??
         false;
   }
+
+  Future<bool> updateUsername(BuildContext context, String newUsername) async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.user;
+      if (user == null) return false;
+      final success = await _authService.updateUsername(user.id!, newUsername);
+      if (success) {
+        // Cập nhật lại user trong Provider
+        userProvider.setUsername(newUsername);
+        notifyListeners();
+      }
+      return success;
+    } catch (e) {
+      print('❌ Lỗi updateUsername: $e');
+      return false;
+    }
+  }
 }

@@ -156,4 +156,27 @@ class AuthService {
       return {'success': false, 'message': 'Error occurred: $e'};
     }
   }
+
+  // Đổi tên người dùng
+  Future<bool> updateUsername(int userId, String newUsername) async {
+    try {
+      final response = await http.put(
+        Uri.parse(ApiService.updateUsernameUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_id': userId,
+          'full_name': newUsername,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print("data: ${jsonEncode(data)}");
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('❌ Lỗi đổi tên người dùng: $e');
+      return false;
+    }
+  }
 }
