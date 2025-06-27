@@ -76,7 +76,6 @@ class VerifyOtpViewModel extends ChangeNotifier {
       if (result['success'] as bool) {
         _startResendTimer();
         errorMessage = '';
-        // Có thể hiển thị thông báo thành công nếu cần
       } else {
         errorMessage = result['message'] ?? 'Không thể gửi lại mã OTP';
       }

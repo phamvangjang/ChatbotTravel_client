@@ -15,6 +15,7 @@ class VerifyOtpForgotPassViewModel extends ChangeNotifier {
   // State variables
   bool _isLoading = false;
   String? _errorMessage;
+  String? _successMessage;
   int _focusedIndex = 0;
 
   // Resend timer
@@ -25,6 +26,7 @@ class VerifyOtpForgotPassViewModel extends ChangeNotifier {
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  String? get successMessage => _successMessage;
   int get focusedIndex => _focusedIndex;
   int get resendCountdown => _resendCountdown;
   bool get canResend => _canResend;
@@ -39,6 +41,8 @@ class VerifyOtpForgotPassViewModel extends ChangeNotifier {
 
   VerifyOtpForgotPassViewModel({this.email=''}) {
     _initializeControllers();
+    // Khởi tạo timer ngay khi viewmodel được tạo
+    _startResendTimer();
   }
 
   // Phương thức để cập nhật email sau khi khởi tạo
@@ -62,7 +66,11 @@ class VerifyOtpForgotPassViewModel extends ChangeNotifier {
   }
 
   void onOtpChanged(String value, int index) {
-    _errorMessage = null;
+    // Xóa thông báo lỗi và thành công khi người dùng bắt đầu nhập
+    if (_errorMessage != null || _successMessage != null) {
+      _errorMessage = null;
+      _successMessage = null;
+    }
 
     if (value.isNotEmpty) {
       // Move to next field if not the last one
@@ -125,35 +133,57 @@ class VerifyOtpForgotPassViewModel extends ChangeNotifier {
   }
 
   Future<void> resendOtp() async {
-    if (!_canResend) return;
+    if (!_canResend || email.isEmpty) return;
 
     try {
-      final result = await _authService.forgotPassword(email);
+      _isLoading = true;
+      _errorMessage = null;
+      _successMessage = null;
+      notifyListeners();
+
+      final result = await _authService.resendForgotPasswordOtp(email);
 
       if (result['success'] as bool) {
         _startResendTimer();
-        _clearOtpFields();
-        _errorMessage = null;
+        _successMessage = 'Mã OTP đã được gửi lại thành công!';
+        print('✅ Gửi lại OTP thành công, bắt đầu đếm ngược 60s');
+        
+        // Tự động ẩn thông báo thành công sau 3 giây
+        Timer(const Duration(seconds: 3), () {
+          _successMessage = null;
+          notifyListeners();
+        });
       } else {
         _errorMessage = result['message'] ?? 'Không thể gửi lại mã OTP';
+        print('❌ Gửi lại OTP thất bại: ${result['message']}');
       }
     } catch (e) {
       _errorMessage = 'Lỗi khi gửi lại mã OTP: $e';
+      print('❌ Lỗi gửi lại OTP: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-
-    notifyListeners();
   }
 
   void _startResendTimer() {
+    // Hủy timer cũ nếu có
+    _resendTimer?.cancel();
+    
     _canResend = false;
     _resendCountdown = 60; // 60 seconds countdown
+    
+    print('⏰ Bắt đầu đếm ngược: ${_resendCountdown}s');
 
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _resendCountdown--;
+      
+      print('⏰ Đếm ngược: ${_resendCountdown}s');
 
       if (_resendCountdown <= 0) {
         _canResend = true;
         timer.cancel();
+        print('✅ Hết thời gian chờ, có thể gửi lại OTP');
       }
 
       notifyListeners();

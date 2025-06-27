@@ -199,4 +199,24 @@ class AuthService {
       return {'success': false, 'message': 'Error occurred: $e'};
     }
   }
+
+  Future<Map<String, dynamic>> resendForgotPasswordOtp(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiService.resendForgotPasswordOtpUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        print("data: ${jsonEncode(data)}");
+        return {'success': true, 'message': data['message']};
+      } else {
+        print("data: ${jsonEncode(data)}");
+        return {'success': false, 'message': data['message']};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error occurred: $e'};
+    }
+  }
 }

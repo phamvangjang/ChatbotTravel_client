@@ -11,20 +11,36 @@ class VerifyOtpForgotPassView extends StatefulWidget {
 }
 
 class _OtpForgotPassViewState extends State<VerifyOtpForgotPassView> {
+  late VerifyOtpForgotPassViewModel _viewModel;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = VerifyOtpForgotPassViewModel();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // Lấy email từ route arguments và cập nhật vào ViewModel
-    final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final email = arguments?['email'] ?? '';
+    if (!_isInitialized) {
+      // Lấy email từ route arguments và cập nhật vào ViewModel
+      final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final email = arguments?['email'] ?? '';
 
-    // Cập nhật email vào ViewModel
-    if (email.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Provider.of<VerifyOtpForgotPassViewModel>(context, listen: false).updateEmail(email);
-      });
+      // Cập nhật email vào ViewModel
+      if (email.isNotEmpty) {
+        _viewModel.updateEmail(email);
+      }
+      _isInitialized = true;
     }
+  }
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
   }
 
   @override
@@ -33,8 +49,8 @@ class _OtpForgotPassViewState extends State<VerifyOtpForgotPassView> {
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final email = arguments?['email'] ?? '';
 
-    return ChangeNotifierProvider(
-      create: (_) => VerifyOtpForgotPassViewModel(email: email),
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
       child: Scaffold(
         backgroundColor: Colors.grey[50],
         appBar: AppBar(
@@ -147,6 +163,39 @@ class _OtpForgotPassViewState extends State<VerifyOtpForgotPassView> {
                         ),
                       ),
 
+                    // Success message
+                    if (viewModel.successMessage != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.green.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              color: Colors.green[700],
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                viewModel.successMessage!,
+                                style: TextStyle(
+                                  color: Colors.green[700],
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                     const SizedBox(height: 32),
 
                     // Confirm button
@@ -200,23 +249,35 @@ class _OtpForgotPassViewState extends State<VerifyOtpForgotPassView> {
                           style: TextStyle(color: Colors.grey, fontSize: 16),
                         ),
                         TextButton(
-                          onPressed:
-                              viewModel.canResend
-                                  ? () => viewModel.resendOtp()
-                                  : null,
-                          child: Text(
-                            viewModel.canResend
-                                ? 'Gửi lại'
-                                : 'Gửi lại (${viewModel.resendCountdown}s)',
-                            style: TextStyle(
-                              color:
-                                  viewModel.canResend
-                                      ? Colors.blue
-                                      : Colors.grey,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          onPressed: viewModel.canResend && !viewModel.isLoading
+                              ? () => viewModel.resendOtp()
+                              : null,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
+                          child: viewModel.isLoading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                                  ),
+                                )
+                              : Text(
+                                  viewModel.canResend
+                                      ? 'Gửi lại'
+                                      : 'Gửi lại (${viewModel.resendCountdown}s)',
+                                  style: TextStyle(
+                                    color: viewModel.canResend && !viewModel.isLoading
+                                        ? Colors.blue
+                                        : Colors.grey,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ],
                     ),

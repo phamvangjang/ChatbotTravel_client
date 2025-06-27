@@ -11,6 +11,7 @@ class ApiService {
   static String get resetPasswordUrl => "$_baseUrl/auth/reset-password";
   static String get updateUsernameUrl => "$_baseUrl/auth/update-username";
   static String get resendRegisterOtpUrl => "$_baseUrl/auth/resend-register-otp";
+  static String get resendForgotPasswordOtpUrl => "$_baseUrl/auth/resend-forgot-password-otp";
 
   //chatting api
   static String get createNewConversationUrl =>
