@@ -179,4 +179,24 @@ class AuthService {
       return false;
     }
   }
+
+  Future<Map<String, dynamic>> resendRegisterOtp(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiService.resendRegisterOtpUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        print("data: ${jsonEncode(data)}");
+        return {'success': true, 'message': data['message']};
+      } else {
+        print("data: ${jsonEncode(data)}");
+        return {'success': false, 'message': data['message']};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error occurred: $e'};
+    }
+  }
 }

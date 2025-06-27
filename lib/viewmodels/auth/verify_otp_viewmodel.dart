@@ -70,20 +70,18 @@ class VerifyOtpViewModel extends ChangeNotifier {
       errorMessage = '';
       notifyListeners();
 
-      /*
       // Gọi API gửi lại OTP đăng ký
       final result = await _authService.resendRegisterOtp(_email);
 
       if (result['success'] as bool) {
         _startResendTimer();
+        errorMessage = '';
         // Có thể hiển thị thông báo thành công nếu cần
       } else {
         errorMessage = result['message'] ?? 'Không thể gửi lại mã OTP';
       }
-       */
-      _startResendTimer();
     } catch (e) {
-      errorMessage = 'Có lỗi xảy ra, vui lòng thử lại sau';
+      errorMessage = 'Có lỗi xảy ra: $e';
       print('❌ Lỗi gửi lại OTP: $e');
     } finally {
       isLoading = false;
